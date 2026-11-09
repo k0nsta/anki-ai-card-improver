@@ -83,12 +83,12 @@ Staleness guard (pure `is_stale(snapshot, current_note_id: int | None, current_m
 - Modify: `pyproject.toml`, `uv.lock`, `.gitignore` (bootstrapped before the run; `Makefile` is final, do not change it)
 - Create: `README.md`
 
-- [ ] `__init__.py`: `try: from aqt import mw` / `except ImportError: mw = None`; `if mw: from . import addon` (addon.py added in Task 5)
-- [ ] `manifest.json` (`package`, `name`, `min_point_version`: 260900 — Anki 26.09+, both editors present there) and default `config.json` from Technical Details
-- [ ] `errors.py`: `AiError(kind, message)` with the kinds from Technical Details
-- [ ] `pyproject.toml`: add `requests` and `types-requests` to dev deps (Anki provides `requests` at runtime), `uv lock`; mypy overrides for `aqt`/`anki` and the Qt modules are already bootstrapped
-- [ ] `.gitignore`: add `user_files/`, `*.ankiaddon`, `dist/`
-- [ ] `import_test.py`: `anki_ai_improver` and `anki_ai_improver.errors` import without `aqt` loaded; Tasks 2–5 each add their new pure module to it
+- [x] `__init__.py`: `try: from aqt import mw` / `except ImportError: mw = None`; `if mw: from . import addon` (addon.py added in Task 5)
+- [x] `manifest.json` (`package`, `name`, `min_point_version`: 260900 — Anki 26.09+, both editors present there) and default `config.json` from Technical Details
+- [x] `errors.py`: `AiError(kind, message)` with the kinds from Technical Details
+- [x] `pyproject.toml`: add `requests` and `types-requests` to dev deps (Anki provides `requests` at runtime), `uv lock`; mypy overrides for `aqt`/`anki` and the Qt modules are already bootstrapped
+- [x] `.gitignore`: add `user_files/`, `*.ankiaddon`, `dist/`
+- [x] `import_test.py`: `anki_ai_improver` and `anki_ai_improver.errors` import without `aqt` loaded; Tasks 2–5 each add their new pure module to it
 
 ### Task 2: Config and secret storage (`config.py`)
 
@@ -96,10 +96,10 @@ Staleness guard (pure `is_stale(snapshot, current_note_id: int | None, current_m
 - Create: `anki_ai_improver/config.py`, `anki_ai_improver/config_test.py`
 - Modify: `anki_ai_improver/import_test.py` (add the config module)
 
-- [ ] `Settings` dataclass + `from_dict(dict)`; missing `base_url`/`model` → `AiError("no_config")`
-- [ ] `load_api_key(user_files: Path)` reads `secret.json`; `save_api_key(...)` creates `user_files/` if missing and writes with mode 600
-- [ ] tests: defaults, missing fields, file round-trip + mode 600, absent or corrupt file → None, save into a missing `user_files/`
-- [ ] run tests — must pass before Task 3
+- [x] `Settings` dataclass + `from_dict(dict)`; missing `base_url`/`model` → `AiError("no_config")`
+- [x] `load_api_key(user_files: Path)` reads `secret.json`; `save_api_key(...)` creates `user_files/` if missing and writes with mode 600
+- [x] tests: defaults, missing fields, file round-trip + mode 600, absent or corrupt file → None, save into a missing `user_files/`
+- [x] run tests — must pass before Task 3
 
 ### Task 3: Prompt resolution and message build (`prompts.py`)
 
@@ -107,13 +107,13 @@ Staleness guard (pure `is_stale(snapshot, current_note_id: int | None, current_m
 - Create: `anki_ai_improver/prompts.py`, `anki_ai_improver/prompts_test.py`
 - Modify: `anki_ai_improver/import_test.py` (add the prompts module)
 
-- [ ] `candidate_deck_ids(current_did, parent_ids_root_first)` → `[current, nearest parent, …, root]`
-- [ ] `resolve_prompt(candidate_deck_ids: list[int], settings) -> (name, text)`
-- [ ] `NoteSnapshot` (note id, mtime, card id, note type, deck name, tags, ordered fields) + `build_messages(prompt_text, snapshot)`
-- [ ] tests: `candidate_deck_ids` order (root, child, grandchild)
-- [ ] tests: exact deck, subdeck inherits parent, grandchild picks nearest mapped parent, unmapped → default, mapped prompt name missing from `prompts` → default
-- [ ] tests: messages contain all field names and the JSON contract
-- [ ] run tests — must pass before Task 4
+- [x] `candidate_deck_ids(current_did, parent_ids_root_first)` → `[current, nearest parent, …, root]`
+- [x] `resolve_prompt(candidate_deck_ids: list[int], settings) -> (name, text)`
+- [x] `NoteSnapshot` (note id, mtime, card id, note type, deck name, tags, ordered fields) + `build_messages(prompt_text, snapshot)`
+- [x] tests: `candidate_deck_ids` order (root, child, grandchild)
+- [x] tests: exact deck, subdeck inherits parent, grandchild picks nearest mapped parent, unmapped → default, mapped prompt name missing from `prompts` → default
+- [x] tests: messages contain all field names and the JSON contract
+- [x] run tests — must pass before Task 4
 
 ### Task 4: OpenAI-compatible client and response parsing (`client.py`)
 
@@ -121,12 +121,12 @@ Staleness guard (pure `is_stale(snapshot, current_note_id: int | None, current_m
 - Create: `anki_ai_improver/client.py`, `anki_ai_improver/client_test.py`
 - Modify: `anki_ai_improver/import_test.py` (add the client module)
 
-- [ ] `complete(settings, api_key, messages, session=requests) -> dict` (response JSON); maps HTTP/timeout/network to `AiError`
-- [ ] `parse_proposal(response, current_fields) -> Proposal` per Technical Details
-- [ ] retry once without `response_format` on a 400 mentioning it
-- [ ] tests (fake session): success, 401, 429, 500, timeout, connection error, 400 `response_format` → retried without it, other 400 → no retry; request carries `Authorization: Bearer` and `model`, URL is `{base_url}/chat/completions` (trailing slash handled)
-- [ ] tests: plain JSON, fenced JSON, prose + JSON, garbage, empty choices, null content, `finish_reason=length`, non-string value → `bad_response` with raw; unknown/missing/unchanged fields
-- [ ] run tests — must pass before Task 5
+- [x] `complete(settings, api_key, messages, session=requests) -> dict` (response JSON); maps HTTP/timeout/network to `AiError`
+- [x] `parse_proposal(response, current_fields) -> Proposal` per Technical Details
+- [x] retry once without `response_format` on a 400 mentioning it
+- [x] tests (fake session): success, 401, 429, 500, timeout, connection error, 400 `response_format` → retried without it, other 400 → no retry; request carries `Authorization: Bearer` and `model`, URL is `{base_url}/chat/completions` (trailing slash handled)
+- [x] tests: plain JSON, fenced JSON, prose + JSON, garbage, empty choices, null content, `finish_reason=length`, non-string value → `bad_response` with raw; unknown/missing/unchanged fields
+- [x] run tests — must pass before Task 5
 
 ### Task 5: Shared flow, minimal key dialog and diff dialog
 
@@ -135,48 +135,48 @@ Staleness guard (pure `is_stale(snapshot, current_note_id: int | None, current_m
 - Modify: `anki_ai_improver/import_test.py` (add the logic module)
 - Create: `anki_ai_improver/addon.py`, `anki_ai_improver/dialog.py`, `anki_ai_improver/settings.py`
 
-- [ ] `logic.py` (pure): `merge_accepted(fields, proposal, accepted_names)`, `is_stale` per Technical Details
-- [ ] `settings.py`: minimal dialog with masked API key (writes `secret.json`), base URL, model; registered via `mw.addonManager.setConfigAction` + Tools menu
-- [ ] `addon.py` `improve(parent, snapshot, candidate_deck_ids, apply)`: no key/config → open the key dialog; else `QueryOp(op=network call).without_collection().failure(show AiError).with_progress().run_in_background()`; snapshot built on main thread before the op
-- [ ] `dialog.py` `DiffDialog`: per changed field old/new as plain text in `QTextBrowser` (never `AnkiWebView`), checkbox each (default ticked), prompt dropdown + Retry, raw response view on `bad_response`
-- [ ] on accept: `is_stale` → warn and stop; else `apply(merge_accepted(...))`
-- [ ] tests for `merge_accepted` and `is_stale` (note deleted, mtime changed, target switched, fresh)
-- [ ] run tests — must pass before Task 6
+- [x] `logic.py` (pure): `merge_accepted(fields, proposal, accepted_names)`, `is_stale` per Technical Details
+- [x] `settings.py`: minimal dialog with masked API key (writes `secret.json`), base URL, model; registered via `mw.addonManager.setConfigAction` + Tools menu
+- [x] `addon.py` `improve(parent, snapshot, candidate_deck_ids, apply)`: no key/config → open the key dialog; else `QueryOp(op=network call).without_collection().failure(show AiError).with_progress().run_in_background()`; snapshot built on main thread before the op
+- [x] `dialog.py` `DiffDialog`: per changed field old/new as plain text in `QTextBrowser` (never `AnkiWebView`), checkbox each (default ticked), prompt dropdown + Retry, raw response view on `bad_response`
+- [x] on accept: `is_stale` → warn and stop; else `apply(merge_accepted(...))`
+- [x] tests for `merge_accepted` and `is_stale` (note deleted, mtime changed, target switched, fresh)
+- [x] run tests — must pass before Task 6
 
 ### Task 6: Reviewer trigger
 
 **Files:**
 - Modify: `anki_ai_improver/addon.py`, `anki_ai_improver/logic.py`, `anki_ai_improver/logic_test.py`
 
-- [ ] context-menu entry via `gui_hooks.reviewer_will_show_context_menu`
-- [ ] shortcut via `gui_hooks.state_shortcuts_will_change`, only when `state == "review"`; key from config via pure `review_shortcut(config) -> tuple[str, str] | None` (`None` = disabled)
-- [ ] apply = fields onto the captured note → `update_note(parent=mw, note=note).run_in_background()` (undo + reviewer redraw)
-- [ ] tests for `review_shortcut` (default, custom, empty → `None`)
-- [ ] run tests — must pass before Task 7
+- [x] context-menu entry via `gui_hooks.reviewer_will_show_context_menu`
+- [x] shortcut via `gui_hooks.state_shortcuts_will_change`, only when `state == "review"`; key from config via pure `review_shortcut(config) -> tuple[str, str] | None` (`None` = disabled)
+- [x] apply = fields onto the captured note → `update_note(parent=mw, note=note).run_in_background()` (undo + reviewer redraw)
+- [x] tests for `review_shortcut` (default, custom, empty → `None`)
+- [x] run tests — must pass before Task 7
 
 ### Task 7: Editor trigger (both editors)
 
 **Files:**
 - Modify: `anki_ai_improver/addon.py`, `anki_ai_improver/logic.py`, `anki_ai_improver/logic_test.py`
 
-- [ ] `buttons.append(editor.addButton(...))` in `gui_hooks.editor_did_init_buttons` (callback already runs after save)
-- [ ] detect the Svelte editor without importing it unguarded: `NewEditor = getattr(aqt.editor, "NewEditor", None)`; `is_new_editor = NewEditor is not None and isinstance(editor, NewEditor)`
-- [ ] pure `editor_mode(is_new_editor, has_note_in_col, is_add_window) -> "update" | "fill_in_place" | "disabled"` + tests for every combination
-- [ ] legacy `Editor` Edit/Browse: `update_note(parent=editor.parentWindow, note=captured)`; windows reload themselves
-- [ ] legacy `Editor` Add: write fields onto `editor.note`, `editor.loadNote()`; no collection write
-- [ ] `NewEditor` Edit: `update_note` then `editor.reload_note()`; `NewEditor` Add (`nid` None): button disabled with tooltip
-- [ ] run tests — must pass before Task 8
+- [x] `buttons.append(editor.addButton(...))` in `gui_hooks.editor_did_init_buttons` (callback already runs after save)
+- [x] detect the Svelte editor without importing it unguarded: `NewEditor = getattr(aqt.editor, "NewEditor", None)`; `is_new_editor = NewEditor is not None and isinstance(editor, NewEditor)`
+- [x] pure `editor_mode(is_new_editor, has_note_in_col, is_add_window) -> "update" | "fill_in_place" | "disabled"` + tests for every combination
+- [x] legacy `Editor` Edit/Browse: `update_note(parent=editor.parentWindow, note=captured)`; windows reload themselves
+- [x] legacy `Editor` Add: write fields onto `editor.note`, `editor.loadNote()`; no collection write
+- [x] `NewEditor` Edit: `update_note` then `editor.reload_note()`; `NewEditor` Add (`nid` None): button disabled with tooltip
+- [x] run tests — must pass before Task 8
 
 ### Task 8: Prompts tab and deck → prompt mapping UI
 
 **Files:**
 - Modify: `anki_ai_improver/settings.py`, `anki_ai_improver/config.py`, `anki_ai_improver/config_test.py`
 
-- [ ] Prompts tab: list of prompts (add / rename / delete) + multi-line text box; default prompt marked and not deletable
-- [ ] Decks tab: table deck (picker, stores deck id) → prompt name (dropdown from `prompts`)
-- [ ] pure config helpers: `add_prompt`, `rename_prompt` (rewrites `decks` and `default_prompt` references), `delete_prompt` (refuses default; removes its deck mappings), `set_deck_prompt`, `remove_deck_prompt`
-- [ ] tests: add duplicate name rejected, rename updates mappings + default, delete default refused, delete clears mappings, set/replace/remove mapping, unknown prompt rejected
-- [ ] run tests — must pass before Task 9
+- [x] Prompts tab: list of prompts (add / rename / delete) + multi-line text box; default prompt marked and not deletable
+- [x] Decks tab: table deck (picker, stores deck id) → prompt name (dropdown from `prompts`)
+- [x] pure config helpers: `add_prompt`, `rename_prompt` (rewrites `decks` and `default_prompt` references), `delete_prompt` (refuses default; removes its deck mappings), `set_deck_prompt`, `remove_deck_prompt`
+- [x] tests: add duplicate name rejected, rename updates mappings + default, delete default refused, delete clears mappings, set/replace/remove mapping, unknown prompt rejected
+- [x] run tests — must pass before Task 9
 
 ### Task 9: [Final] Update documentation
 
@@ -184,8 +184,8 @@ Staleness guard (pure `is_stale(snapshot, current_note_id: int | None, current_m
 - Modify: `README.md`
 - Create: `CLAUDE.md`
 
-- [ ] README: install (symlink/`.ankiaddon`), configuration, example English/Portuguese prompts, privacy note (card content is sent to the configured provider)
-- [ ] add CLAUDE.md for the repo (layout, `make` targets, pure-core rule)
+- [x] README: install (symlink/`.ankiaddon`), configuration, example English/Portuguese prompts, privacy note (card content is sent to the configured provider)
+- [x] add CLAUDE.md for the repo (layout, `make` targets, pure-core rule)
 
 ## Acceptance Criteria
 - Run: `make package && ! python3 -m zipfile -l dist/anki_ai_improver.ankiaddon | grep -E '_test\.py|__pycache__|user_files'`
