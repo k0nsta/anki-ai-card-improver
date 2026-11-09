@@ -121,12 +121,12 @@ Staleness guard (pure `is_stale(snapshot, current_note_id: int | None, current_m
 - Create: `anki_ai_improver/client.py`, `anki_ai_improver/client_test.py`
 - Modify: `anki_ai_improver/import_test.py` (add the client module)
 
-- [ ] `complete(settings, api_key, messages, session=requests) -> dict` (response JSON); maps HTTP/timeout/network to `AiError`
-- [ ] `parse_proposal(response, current_fields) -> Proposal` per Technical Details
-- [ ] retry once without `response_format` on a 400 mentioning it
-- [ ] tests (fake session): success, 401, 429, 500, timeout, connection error, 400 `response_format` → retried without it, other 400 → no retry; request carries `Authorization: Bearer` and `model`, URL is `{base_url}/chat/completions` (trailing slash handled)
-- [ ] tests: plain JSON, fenced JSON, prose + JSON, garbage, empty choices, null content, `finish_reason=length`, non-string value → `bad_response` with raw; unknown/missing/unchanged fields
-- [ ] run tests — must pass before Task 5
+- [x] `complete(settings, api_key, messages, session=requests) -> dict` (response JSON); maps HTTP/timeout/network to `AiError`
+- [x] `parse_proposal(response, current_fields) -> Proposal` per Technical Details
+- [x] retry once without `response_format` on a 400 mentioning it
+- [x] tests (fake session): success, 401, 429, 500, timeout, connection error, 400 `response_format` → retried without it, other 400 → no retry; request carries `Authorization: Bearer` and `model`, URL is `{base_url}/chat/completions` (trailing slash handled)
+- [x] tests: plain JSON, fenced JSON, prose + JSON, garbage, empty choices, null content, `finish_reason=length`, non-string value → `bad_response` with raw; unknown/missing/unchanged fields
+- [x] run tests — must pass before Task 5
 
 ### Task 5: Shared flow, minimal key dialog and diff dialog
 
