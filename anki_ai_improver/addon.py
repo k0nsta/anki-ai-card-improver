@@ -268,17 +268,25 @@ def _editor_did_init_buttons(buttons: list[str], editor: Any) -> None:
     NewEditor = getattr(aqt.editor, "NewEditor", None)
     is_new_editor = NewEditor is not None and isinstance(editor, NewEditor)
     is_add_window = bool(editor.addMode)
-    has_note_in_col = (
-        editor.nid is not None if is_new_editor else not is_add_window and editor.note is not None
-    )
-    mode = editor_mode(is_new_editor, has_note_in_col, is_add_window)
+    # NewEditor Add has no collection note to update and cannot fill in place.
+    # Its Add state is known during button construction; Edit state is not.
+    disabled = is_new_editor and is_add_window
     tooltip = (
         "AI suggestions are unavailable until this note is added."
-        if mode == "disabled"
+        if disabled
         else "Improve this note with AI"
     )
 
     def trigger(active_editor: Any) -> None:
+        active_is_add_window = bool(active_editor.addMode)
+        has_note_in_col = (
+            active_editor.nid is not None
+            if is_new_editor
+            else not active_is_add_window and active_editor.note is not None
+        )
+        mode = editor_mode(is_new_editor, has_note_in_col, active_is_add_window)
+        if mode == "disabled":
+            return
         _improve_editor_note(active_editor, is_new_editor, mode)
 
     button = editor.addButton(
@@ -288,7 +296,7 @@ def _editor_did_init_buttons(buttons: list[str], editor: Any) -> None:
         tip=tooltip,
         label="Improve with AI",
     )
-    if mode == "disabled":
+    if disabled:
         button = button.replace("<button", "<button disabled", 1)
     buttons.append(button)
 
