@@ -3,6 +3,9 @@
   "model": "anthropic/claude-sonnet-5-5",
   "timeout_s": 60,
   "shortcut": "Ctrl+Alt+J",
+  "gate_enabled": false,
+  "gate_model": "typesafe/jev-1.14",
+  "gate_min_correctness": 2.5,
   "default_prompt": "default",
   "prompts": {
     "default": "Fix factual and spelling errors, make the card clearer and more concise. Keep the language of each field."

@@ -141,8 +141,8 @@ click → snapshot + deck prompt
 - Modify: `anki_ai_improver/settings.py`
 - Modify: `anki_ai_improver/config.json`
 
-- [ ] General tab: checkbox "Quality gate (checks correctness, ~0.3 s, OpenRouter only)", min-correctness spin box (0–4, step 0.1), disabled with a hint when `base_url` is not OpenRouter
-- [ ] `config.json` gains the three gate keys with defaults
+- [x] General tab: checkbox "Quality gate (checks correctness, ~0.3 s, OpenRouter only)", min-correctness spin box (0–4, step 0.1), disabled with a hint when `base_url` is not OpenRouter
+- [x] `config.json` gains the three gate keys with defaults
 
 ### Task 7: Deck-agnostic defaults and example prompts
 
