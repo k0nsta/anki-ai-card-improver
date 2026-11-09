@@ -70,10 +70,11 @@ click → snapshot + deck prompt
 **Files:**
 - Modify: `anki_ai_improver/client.py`
 - Modify: `anki_ai_improver/client_test.py`
+- Modify: `anki_ai_improver/addon.py`
 
 - [ ] `complete(settings, api_key, messages, field_names, session=requests)`: send the json_schema from Technical Details built from `field_names`
 - [ ] on HTTP 400 mentioning `response_format`: retry with `json_object`, then without `response_format`; each step once
-- [ ] update callers in `addon.py` / `dialog.py` to pass the note's field names
+- [ ] update the caller `addon.py` (`_run_request`) to pass `list(snapshot.fields)`
 - [ ] tests: schema payload shape and field names, 400 → json_object → none chain, non-response_format 400 does not retry, existing error mapping unchanged
 - [ ] run tests — must pass before Task 2
 
@@ -83,8 +84,8 @@ click → snapshot + deck prompt
 - Modify: `anki_ai_improver/client.py`
 - Modify: `anki_ai_improver/client_test.py`
 
-- [ ] `normalise_field(value)`: strip a wrapping ``` fence, `\r\n`/`\n` → `<br>`, trim; applied in `parse_proposal` before the unchanged-field comparison
-- [ ] tests: literal newlines, fenced value, already-`<br>` value unchanged, media references untouched, unchanged-after-normalise field dropped
+- [ ] `normalise_field(value)`: strip a wrapping ``` fence, `\r\n`/`\n` → `<br>` except inside `<pre>…</pre>`, trim; applied in `parse_proposal` to the proposal, and to both sides of the unchanged-field comparison (the original field itself is never rewritten)
+- [ ] tests: literal newlines, fenced value, already-`<br>` value unchanged, media references untouched, unchanged-after-normalise field dropped, original value containing `\n` (and a `<pre>` block) not reported as changed
 
 ### Task 3: Add-on output rules in the prompt
 
@@ -121,13 +122,17 @@ click → snapshot + deck prompt
 - Modify: `anki_ai_improver/logic.py`
 - Modify: `anki_ai_improver/logic_test.py`
 - Modify: `anki_ai_improver/client.py`
+- Modify: `anki_ai_improver/client_test.py`
 
 - [ ] `Proposal` (`client.py`) gains `status: str = ""`
 - [ ] in the background op: draft → if gate enabled and available: score the merged card text → fix call when `needs_fix` → return the proposal with its status
 - [ ] pure `gate_status(enabled, available, score, fixed, error) -> str` producing the dialog status line from Solution Overview
 - [ ] gate or fix-call errors never fail the request: draft kept, status "⚠ unchecked: <reason>"; gate enabled with a non-OpenRouter `base_url` → "⚠ unchecked: quality gate needs OpenRouter"
 - [ ] `DiffDialog` shows the status line; Retry re-runs the whole flow
+- [ ] pure `run_gate(draft: Proposal, merged_text, score_fn, fix_fn, enabled, available, minimum) -> Proposal` in `logic.py` with injected callables; `addon.py` only calls it inside the QueryOp
 - [ ] tests for `gate_status` (off, needs OpenRouter, passed, fixed, gate error, fix-call error)
+- [ ] tests for `run_gate`: off → draft unchanged and score_fn not called; unavailable; pass; low score → fix_fn result with "✓ fixed after check"; score_fn raises → draft + "⚠ unchecked"; fix_fn raises → draft + "⚠ unchecked"
+- [ ] test in `client_test.py` that `Proposal.status` defaults to `""`
 - [ ] run tests — must pass before Task 6
 
 ### Task 6: Settings: gate controls
@@ -146,15 +151,16 @@ click → snapshot + deck prompt
 - Modify: `anki_ai_improver/config.py`
 - Modify: `anki_ai_improver/config_test.py`
 - Modify: `anki_ai_improver/addon.py`
+- Modify: `anki_ai_improver/settings.py`
 - Create: `docs/prompts/generic.md`, `docs/prompts/english.md`, `docs/prompts/portuguese.md`
 - Modify: `README.md`
 - Modify: `CLAUDE.md`
 
 - [ ] `config.json`: `"model": "openai/gpt-6-luna"`; `prompts.default` = the generic prompt below (verbatim)
 - [ ] `config.py` `_DEFAULT_PROMPTS['default']` = the same generic prompt; test that it equals `config.json`'s `prompts.default`
-- [ ] pure `migrate_config(values) -> (values, changed)` per Technical Details; `addon.py` applies it when loading settings and writes the config back only when `changed`
+- [ ] pure `migrate_config(values) -> (values, changed)` per Technical Details; `addon.py` (when loading settings) and `settings.py` (when the dialog opens) apply it and write the config back only when `changed`
 - [ ] tests for `migrate_config`: old prompt replaced, edited prompt kept, old model replaced, other model kept, already-migrated config unchanged
-- [ ] create the three prompt files with the verbatim texts below
+- [ ] create the three prompt files with the verbatim texts below (file content = the text only, no fences)
 - [ ] README: "Prompts" section — the default works for any deck; per-deck prompts own content only; links to the three examples; how to map them in the Decks tab
 - [ ] README: "Quality gate" section — what it checks, cost/latency, OpenRouter only, off by default; model cost table (gpt-6-luna ~$0.0005/card ~8 s, claude-haiku-5.5 ~$0.001/card)
 - [ ] CLAUDE.md: output rules live in `prompts.py` and stay deck-agnostic; gate lives in `gate.py`
@@ -255,6 +261,7 @@ The note's current content is the topic (a bare word, a draft or an old card). R
 ## Acceptance Criteria
 - Run: `uv run python -c "import json; c=json.load(open('anki_ai_improver/config.json')); assert c['model']=='openai/gpt-6-luna' and c['gate_enabled'] is False and c['gate_model']=='typesafe/jev-1.14' and c['gate_min_correctness']==2.5 and 'any' in c['prompts']['default']"`
 - Run: `test -s docs/prompts/generic.md && test -s docs/prompts/english.md && test -s docs/prompts/portuguese.md`
+- Run: `uv run python -c "import json, pathlib; c=json.load(open('anki_ai_improver/config.json')); assert pathlib.Path('docs/prompts/generic.md').read_text().strip() == c['prompts']['default'].strip()"`
 - Run: `grep -q 'json_schema' anki_ai_improver/client.py && grep -q 'alpha/decisions' anki_ai_improver/gate.py`
 - Run: `! grep -niE 'english|russian|portug' anki_ai_improver/prompts.py anki_ai_improver/gate.py`
 - Run: `uv run python -c "import sys, anki_ai_improver.gate; assert 'aqt' not in sys.modules"`
