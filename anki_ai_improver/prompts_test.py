@@ -3,6 +3,7 @@ import json
 from anki_ai_improver.config import Settings
 from anki_ai_improver.prompts import (
     NoteSnapshot,
+    build_fix_messages,
     build_messages,
     candidate_deck_ids,
     resolve_prompt,
@@ -50,7 +51,7 @@ def test_resolve_prompt_uses_default_when_mapping_names_missing_prompt() -> None
     assert resolve_prompt([30], settings) == ("default", "Default instructions")
 
 
-def test_build_messages_include_all_fields_and_json_contract() -> None:
+def test_build_messages_include_all_fields_and_generic_output_rules() -> None:
     snapshot = NoteSnapshot(
         note_id=1,
         mtime=2,
@@ -64,8 +65,12 @@ def test_build_messages_include_all_fields_and_json_contract() -> None:
     messages = build_messages("Fix errors", snapshot)
 
     assert messages[0]["role"] == "system"
-    assert 'Return ONLY a JSON object {"fields": {<field name>: <html>}}' in messages[0]["content"]
-    assert "using exactly the field names given" in messages[0]["content"]
+    rules = messages[0]["content"].split("Output rules:\n", 1)[1]
+    assert 'these note field names: ["Front", "Back"]' in rules
+    assert "Anki HTML" in rules
+    assert "Keep media references" in rules
+    assert "Portuguese" not in rules
+    assert "language" not in rules.lower()
     user_message = json.loads(messages[1]["content"])
     assert list(user_message["fields"]) == ["Front", "Back"]
     assert user_message == {
@@ -74,3 +79,33 @@ def test_build_messages_include_all_fields_and_json_contract() -> None:
         "tags": ["vocabulary"],
         "fields": {"Front": "Olá", "Back": "Hello"},
     }
+
+
+def test_build_fix_messages_include_score_original_note_and_draft() -> None:
+    snapshot = NoteSnapshot(
+        note_id=1,
+        mtime=2,
+        card_id=3,
+        note_type="Basic",
+        deck_name="Portuguese",
+        tags=["vocabulary"],
+        fields={"Front": "Olá", "Back": "Hello"},
+    )
+
+    messages = build_fix_messages(
+        "Fix errors",
+        snapshot,
+        {"Front": "Oi", "Back": "Hello there"},
+        1.25,
+    )
+
+    assert "correctness 1.2/4" in messages[0]["content"]
+    assert 'these note field names: ["Front", "Back"]' in messages[0]["content"]
+    user_message = json.loads(messages[1]["content"])
+    assert user_message["original_note"] == {
+        "note_type": "Basic",
+        "deck": "Portuguese",
+        "tags": ["vocabulary"],
+        "fields": {"Front": "Olá", "Back": "Hello"},
+    }
+    assert user_message["draft"] == {"Front": "Oi", "Back": "Hello there"}

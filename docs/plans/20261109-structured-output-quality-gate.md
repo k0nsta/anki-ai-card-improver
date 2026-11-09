@@ -93,9 +93,9 @@ click → snapshot + deck prompt
 - Modify: `anki_ai_improver/prompts.py`
 - Modify: `anki_ai_improver/prompts_test.py`
 
-- [ ] `build_messages` appends the output rules from Technical Details (field names listed) instead of the one-line contract
-- [ ] `build_fix_messages(prompt_text, snapshot, draft_fields, score)` for the gate's fix call
-- [ ] tests: rules list the exact field names, no deck- or language-specific text in the rules, fix message contains the score, the draft and the original note
+- [x] `build_messages` appends the output rules from Technical Details (field names listed) instead of the one-line contract
+- [x] `build_fix_messages(prompt_text, snapshot, draft_fields, score)` for the gate's fix call
+- [x] tests: rules list the exact field names, no deck- or language-specific text in the rules, fix message contains the score, the draft and the original note
 
 ### Task 4: Quality gate client (pure)
 
