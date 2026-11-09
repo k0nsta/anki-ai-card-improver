@@ -18,5 +18,4 @@ link:
 
 package:
 	mkdir -p dist
-	rm -f dist/$(PKG).ankiaddon
-	cd $(PKG) && zip -r ../dist/$(PKG).ankiaddon . -x '*_test.py' '*__pycache__*' 'user_files/*' 'meta.json'
+	uv run python -c "import pathlib, zipfile; src = pathlib.Path('$(PKG)'); skip = lambda f: f.name.endswith('_test.py') or '__pycache__' in f.parts or 'user_files' in f.parts or f.name == 'meta.json'; z = zipfile.ZipFile('dist/$(PKG).ankiaddon', 'w', zipfile.ZIP_DEFLATED); [z.write(f, f.relative_to(src)) for f in sorted(src.rglob('*')) if f.is_file() and not skip(f)]; z.close()"

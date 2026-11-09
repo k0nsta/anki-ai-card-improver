@@ -188,7 +188,7 @@ Staleness guard (pure `is_stale(snapshot, current_note_id: int | None, current_m
 - [ ] add CLAUDE.md for the repo (layout, `make` targets, pure-core rule)
 
 ## Acceptance Criteria
-- Run: `make package && ! unzip -l dist/anki_ai_improver.ankiaddon | grep -E '_test\.py|__pycache__|user_files'`
+- Run: `make package && ! python3 -m zipfile -l dist/anki_ai_improver.ankiaddon | grep -E '_test\.py|__pycache__|user_files'`
 - Run: `uv run python -c "import json; m=json.load(open('anki_ai_improver/manifest.json')); assert m['min_point_version'] >= 260900"`
 - Run: `uv run python -c "import json; c=json.load(open('anki_ai_improver/config.json')); assert c['decks'] == {} and c['shortcut'] == 'Ctrl+Alt+J' and 'api_key' not in json.dumps(c)"`
 - Run: `! grep -rn 'ANKI_AI_API_KEY\|AnkiWebView' anki_ai_improver/`
