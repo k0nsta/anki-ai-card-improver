@@ -50,9 +50,9 @@ class SettingsDialog(QDialog):
         self.values = mw.addonManager.getConfig(self.addon_name) or {}
         self.settings = Settings.from_dict(
             {
-                "base_url": self.values.get("base_url", "https://example.invalid/v1"),
-                "model": self.values.get("model", "not-configured"),
                 **self.values,
+                "base_url": self.values.get("base_url") or "https://example.invalid/v1",
+                "model": self.values.get("model") or "not-configured",
             }
         )
         self.base_url = QLineEdit(str(self.values.get("base_url", "")), self)
