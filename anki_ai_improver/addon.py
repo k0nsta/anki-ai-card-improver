@@ -81,7 +81,11 @@ def improve(
     prompt_name, prompt_text = resolve_prompt(candidate_deck_ids, settings)
 
     def present(proposal: Proposal, selected_prompt: str) -> None:
-        def retry(name: str, receive: Callable[[Proposal], None]) -> None:
+        def retry(
+            name: str,
+            receive: Callable[[Proposal], None],
+            failed: Callable[[Exception], None],
+        ) -> None:
             selected_text = settings.prompts.get(
                 name, settings.prompts.get(settings.default_prompt, "")
             )
@@ -89,7 +93,15 @@ def improve(
             def done(result: Proposal) -> None:
                 receive(result)
 
-            _run_request(parent, snapshot, settings, api_key, selected_text, done)
+            _run_request(
+                parent,
+                snapshot,
+                settings,
+                api_key,
+                selected_text,
+                done,
+                on_failure=failed,
+            )
 
         dialog = DiffDialog(
             parent,
@@ -116,6 +128,7 @@ def _run_request(
     api_key: str,
     prompt_text: str,
     on_success: Callable[[Proposal], None],
+    on_failure: Callable[[Exception], None] = _show_error,
 ) -> None:
     messages = build_messages(prompt_text, snapshot)
 
@@ -126,7 +139,7 @@ def _run_request(
     (
         QueryOp(parent=parent, op=op, success=on_success)
         .without_collection()
-        .failure(_show_error)
+        .failure(on_failure)
         .with_progress()
         .run_in_background()
     )
@@ -214,8 +227,7 @@ def _capture_editor_note(
 
     field_names = [field["name"] for field in note_type["flds"]]
     fields = dict(zip(field_names, note.fields, strict=True))
-    card = getattr(editor, "card", None)
-    deck_id = int(card.current_deck_id()) if card is not None else int(mw.col.decks.current()["id"])
+    deck_id = _editor_deck_id(editor, note)
     parents = mw.col.decks.parents(deck_id)
     candidate_ids = candidate_deck_ids(deck_id, [int(deck["id"]) for deck in parents])
     note_id = int(getattr(note, "id", 0) or 0)
@@ -229,6 +241,29 @@ def _capture_editor_note(
         fields=fields,
     )
     return snapshot, note, field_names, candidate_ids
+
+
+def _editor_deck_id(editor: Any, note: Any) -> int:
+    """Resolve the deck represented by an editor, including Add and Svelte editors."""
+    card = getattr(editor, "card", None)
+    if card is not None:
+        return int(card.current_deck_id())
+
+    if bool(getattr(editor, "addMode", False)):
+        parent = editor.parentWindow
+        chooser = getattr(parent, "deck_chooser", None)
+        if chooser is None:
+            chooser = getattr(parent, "deckChooser", None)
+        selected = getattr(chooser, "selected_deck_id", None)
+        if selected is not None:
+            return int(selected)
+
+    # The Svelte editor is nid-based and does not expose its current card. Use
+    # the note's first card so prompt selection follows the note's actual deck.
+    cards = note.cards() if hasattr(note, "cards") else []
+    if cards:
+        return int(cards[0].current_deck_id())
+    return int(mw.col.decks.current()["id"])
 
 
 def _improve_editor_note(editor: Any, is_new_editor: bool, mode: str) -> None:

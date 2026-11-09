@@ -16,6 +16,7 @@ from aqt.qt import (
 )
 
 from .client import Proposal
+from .errors import AiError
 from .logic import is_stale, merge_accepted
 from .prompts import NoteSnapshot
 
@@ -28,7 +29,7 @@ class DiffDialog(QDialog):
         proposal: Proposal,
         prompt_name: str,
         prompt_names: list[str],
-        retry: Callable[[str, Callable[[Proposal], None]], None],
+        retry: Callable[[str, Callable[[Proposal], None], Callable[[Exception], None]], None],
         apply: Callable[[dict[str, str]], None],
         current_state: Callable[[], tuple[int | None, int | None, int | None]],
     ) -> None:
@@ -100,10 +101,18 @@ class DiffDialog(QDialog):
         def receive(proposal: Proposal) -> None:
             self.proposal = proposal
             self.raw_view.setPlainText(proposal.raw)
+            self.raw_view.hide()
             self._populate_fields()
             self.retry_button.setEnabled(True)
 
-        self.retry_request(self.prompt.currentText(), receive)
+        def failed(error: Exception) -> None:
+            self.retry_button.setEnabled(True)
+            if isinstance(error, AiError) and error.kind == "bad_response":
+                self.show_bad_response(error.message)
+            else:
+                QMessageBox.warning(self, "AI Card Improver", str(error))
+
+        self.retry_request(self.prompt.currentText(), receive, failed)
 
     def show_bad_response(self, raw: str) -> None:
         self.raw_view.setPlainText(raw)
