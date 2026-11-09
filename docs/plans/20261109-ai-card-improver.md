@@ -81,9 +81,9 @@ Staleness guard (pure `is_stale(snapshot, current)`): on accept, refuse when the
 - Create: `pyproject.toml`, `Makefile`, `.gitignore`, `README.md`
 
 - [ ] `__init__.py`: `try: from aqt import mw` / `except ImportError: mw = None`; `if mw: from . import addon` (addon.py added in Task 5)
-- [ ] `manifest.json` (`package`, `name`) and default `config.json` from Technical Details
+- [ ] `manifest.json` (`package`, `name`, `min_point_version`: 260900 — Anki 26.09+, both editors present there) and default `config.json` from Technical Details
 - [ ] `pyproject.toml`: pytest, ruff, mypy (uv dev deps); mypy excludes Qt modules
-- [ ] `Makefile`: `test`, `lint`, `link ADDONS=<addons21 dir>` (symlink), `package` (zip to `.ankiaddon`, excluding `*_test.py`, `__pycache__`, `user_files/`)
+- [ ] `Makefile`: `test`, `lint`, `link ADDONS=<addons21 dir>` (symlink), `package` (zip to `dist/anki_ai_improver.ankiaddon`, excluding `*_test.py`, `__pycache__`, `user_files/`)
 - [ ] `.gitignore`: `user_files/`, `*.ankiaddon`, `.venv/`
 - [ ] `import_test.py`: package and pure modules import without `aqt`
 - [ ] `make test lint` passes
@@ -144,7 +144,6 @@ Staleness guard (pure `is_stale(snapshot, current)`): on accept, refuse when the
 - [ ] apply = fields onto the captured note → `update_note(parent=mw, note=note).run_in_background()` (undo + reviewer redraw)
 - [ ] tests for `review_shortcut` (default, custom, empty → disabled)
 - [ ] run tests — must pass before Task 7
-- [ ] manual check in dev profile: menu, shortcut, accept, Ctrl+Z undoes
 
 ### Task 7: Editor trigger (both editors)
 
@@ -157,7 +156,6 @@ Staleness guard (pure `is_stale(snapshot, current)`): on accept, refuse when the
 - [ ] legacy `Editor` Add: write fields onto `editor.note`, `editor.loadNote()`; no collection write
 - [ ] `NewEditor` Edit: `update_note` then `editor.reload_note()`; `NewEditor` Add (`nid` None): button disabled with tooltip
 - [ ] run tests — must pass before Task 8
-- [ ] manual check: Edit, Browse, Add in legacy editor; Edit + Add in Svelte editor experiment
 
 ### Task 8: Prompts tab and deck → prompt mapping UI
 
@@ -169,25 +167,33 @@ Staleness guard (pure `is_stale(snapshot, current)`): on accept, refuse when the
 - [ ] pure config helpers: `add_prompt`, `rename_prompt` (rewrites `decks` and `default_prompt` references), `delete_prompt` (refuses default; removes its deck mappings), `set_deck_prompt`, `remove_deck_prompt`
 - [ ] tests: add duplicate name rejected, rename updates mappings + default, delete default refused, delete clears mappings, set/replace/remove mapping, unknown prompt rejected
 - [ ] run tests — must pass before Task 9
-- [ ] manual check: save, reopen; API key appears in neither `meta.json` nor `config.json`
 
-### Task 9: Verify acceptance criteria
-- [ ] English deck card → English prompt; Portuguese subdeck card → Portuguese prompt; unmapped deck → default
-- [ ] filtered deck card uses home deck prompt
-- [ ] partial accept writes only ticked fields; Ctrl+Z restores
-- [ ] 401 / timeout / garbage / truncated response → warning, no write
-- [ ] card advanced while request in flight → accept refused
-- [ ] `make test lint` green; `make package` zip has no tests
-
-### Task 10: [Final] Update documentation
+### Task 9: [Final] Update documentation
 - [ ] README: install (symlink/`.ankiaddon`), configuration, example English/Portuguese prompts, privacy note (card content is sent to the configured provider)
 - [ ] add CLAUDE.md for the repo (layout, `make` targets, pure-core rule)
 - [ ] move this plan to `docs/plans/completed/`
 
+## Acceptance Criteria
+- Run: `make package && ! unzip -l dist/anki_ai_improver.ankiaddon | grep -E '_test\.py|__pycache__|user_files'`
+- Run: `uv run python -c "import json; m=json.load(open('anki_ai_improver/manifest.json')); assert m['min_point_version'] >= 260900"`
+- Run: `uv run python -c "import json; c=json.load(open('anki_ai_improver/config.json')); assert c['decks'] == {} and c['shortcut'] == 'Ctrl+Alt+J' and 'api_key' not in json.dumps(c)"`
+- Run: `! grep -rn 'ANKI_AI_API_KEY\|AnkiWebView' anki_ai_improver/`
+- Run: `uv run python -c "import sys, anki_ai_improver.config, anki_ai_improver.prompts, anki_ai_improver.client, anki_ai_improver.logic; assert 'aqt' not in sys.modules"`
+- `prompts_test.py` covers: exact deck, subdeck inherits nearest mapped parent, unmapped → default, missing prompt name → default
+- `client_test.py` covers: 401, 429, 5xx, timeout, network error, fenced JSON, garbage, empty choices, null content, `finish_reason=length`, non-string value, unknown/missing/unchanged fields
+- `logic_test.py` covers `merge_accepted` (only ticked fields written) and `is_stale` (deleted, mtime changed, target switched, fresh)
+- `config_test.py` covers `secret.json` written with mode 600 and prompt rename rewriting deck mappings and `default_prompt`
+- `addon.py` registers `reviewer_will_show_context_menu`, `state_shortcuts_will_change` (review state only), `editor_did_init_buttons`, and branches on `NewEditor` for the editor apply path
+
 ## Post-Completion
 *Informational only*
 
-**Manual verification:**
+**Manual verification** (on the Mac, Anki 26.09+, add-on linked with `make link`):
+- reviewer: context menu + Ctrl+Alt+J open the diff; accept writes ticked fields only; Ctrl+Z undoes
+- English deck card → English prompt; Portuguese subdeck card → Portuguese prompt; unmapped deck → default; filtered deck → home deck prompt
+- 401 / timeout / garbage response → warning, no write; card advanced while request in flight → accept refused
+- editor: Edit, Browse, Add in the legacy editor; Edit + Add (button disabled) with the Svelte editor experiment on
+- settings: save, reopen; API key appears in neither `meta.json` nor `config.json`
 - daily use on real English/Portuguese decks for a week; tune the default system contract
 - check edited notes sync to AnkiMobile/AnkiDroid unchanged
 
