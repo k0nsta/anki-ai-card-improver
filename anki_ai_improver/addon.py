@@ -12,7 +12,7 @@ from aqt.operations.note import update_note
 from aqt.qt import QDialog, QMessageBox, QTextBrowser, QVBoxLayout
 
 from .client import Proposal, complete, parse_proposal
-from .config import Settings, load_api_key
+from .config import Settings, load_api_key, migrate_config
 from .dialog import DiffDialog
 from .errors import AiError
 from .gate import card_text, decisions_url, score_correctness
@@ -35,6 +35,9 @@ def _load_settings() -> Settings:
     values = mw.addonManager.getConfig(_addon_name())
     if not isinstance(values, dict):
         raise AiError("no_config", "Add-on configuration is missing")
+    values, changed = migrate_config(values)
+    if changed:
+        mw.addonManager.writeConfig(_addon_name(), values)
     return Settings.from_dict(values)
 
 

@@ -30,6 +30,7 @@ from .config import (
     add_prompt,
     delete_prompt,
     load_api_key,
+    migrate_config,
     remove_deck_prompt,
     rename_prompt,
     save_api_key,
@@ -52,6 +53,9 @@ class SettingsDialog(QDialog):
         self.setWindowTitle("AI Card Improver Settings")
         self.addon_name = _addon_name()
         self.values = mw.addonManager.getConfig(self.addon_name) or {}
+        self.values, changed = migrate_config(self.values)
+        if changed:
+            mw.addonManager.writeConfig(self.addon_name, self.values)
         self.settings = Settings.from_dict(
             {
                 **self.values,

@@ -1,6 +1,7 @@
 import json
 import stat
 from pathlib import Path
+from typing import Any
 
 import pytest
 
@@ -9,6 +10,7 @@ from anki_ai_improver.config import (
     add_prompt,
     delete_prompt,
     load_api_key,
+    migrate_config,
     remove_deck_prompt,
     rename_prompt,
     save_api_key,
@@ -28,6 +30,69 @@ def test_settings_defaults() -> None:
     assert settings.gate_enabled is False
     assert settings.gate_model == "typesafe/jev-1.14"
     assert settings.gate_min_correctness == 2.5
+
+
+def test_default_prompt_matches_config_json() -> None:
+    config_path = Path(__file__).with_name("config.json")
+    config = json.loads(config_path.read_text(encoding="utf-8"))
+    settings = Settings.from_dict({"base_url": "url", "model": "model"})
+
+    assert settings.prompts["default"] == config["prompts"]["default"]
+
+
+def test_migrate_config_replaces_untouched_prompt() -> None:
+    values: dict[str, Any] = {
+        "model": "custom/model",
+        "prompts": {
+            "default": (
+                "Fix factual and spelling errors, make the card clearer and more concise. "
+                "Keep the language of each field."
+            )
+        },
+    }
+
+    migrated, changed = migrate_config(values)
+
+    assert changed is True
+    assert (
+        migrated["prompts"]["default"]
+        == Settings.from_dict({"base_url": "url", "model": "model"}).prompts["default"]
+    )
+    assert values["prompts"]["default"] != migrated["prompts"]["default"]
+
+
+def test_migrate_config_keeps_edited_prompt() -> None:
+    values = {"prompts": {"default": "My edited prompt"}}
+
+    migrated, changed = migrate_config(values)
+
+    assert migrated == values
+    assert changed is False
+
+
+def test_migrate_config_replaces_old_model() -> None:
+    migrated, changed = migrate_config({"model": "anthropic/claude-sonnet-5-5"})
+
+    assert migrated["model"] == "openai/gpt-6-luna"
+    assert changed is True
+
+
+def test_migrate_config_keeps_other_model() -> None:
+    values = {"model": "provider/custom"}
+
+    migrated, changed = migrate_config(values)
+
+    assert migrated == values
+    assert changed is False
+
+
+def test_migrate_config_already_migrated_is_unchanged() -> None:
+    values = json.loads(Path(__file__).with_name("config.json").read_text(encoding="utf-8"))
+
+    migrated, changed = migrate_config(values)
+
+    assert migrated == values
+    assert changed is False
 
 
 @pytest.mark.parametrize("minimum", ["3", -1, 5])

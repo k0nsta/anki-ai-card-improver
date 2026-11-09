@@ -156,14 +156,14 @@ click → snapshot + deck prompt
 - Modify: `README.md`
 - Modify: `CLAUDE.md`
 
-- [ ] `config.json`: `"model": "openai/gpt-6-luna"`; `prompts.default` = the generic prompt below (verbatim)
-- [ ] `config.py` `_DEFAULT_PROMPTS['default']` = the same generic prompt; test that it equals `config.json`'s `prompts.default`
-- [ ] pure `migrate_config(values) -> (values, changed)` per Technical Details; `addon.py` (when loading settings) and `settings.py` (when the dialog opens) apply it and write the config back only when `changed`
-- [ ] tests for `migrate_config`: old prompt replaced, edited prompt kept, old model replaced, other model kept, already-migrated config unchanged
-- [ ] create the three prompt files with the verbatim texts below (file content = the text only, no fences)
-- [ ] README: "Prompts" section — the default works for any deck; per-deck prompts own content only; links to the three examples; how to map them in the Decks tab
-- [ ] README: "Quality gate" section — what it checks, cost/latency, OpenRouter only, off by default; model cost table (gpt-6-luna ~$0.0005/card ~8 s, claude-haiku-5.5 ~$0.001/card)
-- [ ] CLAUDE.md: output rules live in `prompts.py` and stay deck-agnostic; gate lives in `gate.py`
+- [x] `config.json`: `"model": "openai/gpt-6-luna"`; `prompts.default` = the generic prompt below (verbatim)
+- [x] `config.py` `_DEFAULT_PROMPTS['default']` = the same generic prompt; test that it equals `config.json`'s `prompts.default`
+- [x] pure `migrate_config(values) -> (values, changed)` per Technical Details; `addon.py` (when loading settings) and `settings.py` (when the dialog opens) apply it and write the config back only when `changed`
+- [x] tests for `migrate_config`: old prompt replaced, edited prompt kept, old model replaced, other model kept, already-migrated config unchanged
+- [x] create the three prompt files with the verbatim texts below (file content = the text only, no fences)
+- [x] README: "Prompts" section — the default works for any deck; per-deck prompts own content only; links to the three examples; how to map them in the Decks tab
+- [x] README: "Quality gate" section — what it checks, cost/latency, OpenRouter only, off by default; model cost table (gpt-6-luna ~$0.0005/card ~8 s, claude-haiku-5.5 ~$0.001/card)
+- [x] CLAUDE.md: output rules live in `prompts.py` and stay deck-agnostic; gate lives in `gate.py`
 
 Generic prompt (`docs/prompts/generic.md` and `prompts.default`):
 ~~~text
