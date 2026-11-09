@@ -159,13 +159,13 @@ Staleness guard (pure `is_stale(snapshot, current_note_id: int | None, current_m
 **Files:**
 - Modify: `anki_ai_improver/addon.py`, `anki_ai_improver/logic.py`, `anki_ai_improver/logic_test.py`
 
-- [ ] `buttons.append(editor.addButton(...))` in `gui_hooks.editor_did_init_buttons` (callback already runs after save)
-- [ ] detect the Svelte editor without importing it unguarded: `NewEditor = getattr(aqt.editor, "NewEditor", None)`; `is_new_editor = NewEditor is not None and isinstance(editor, NewEditor)`
-- [ ] pure `editor_mode(is_new_editor, has_note_in_col, is_add_window) -> "update" | "fill_in_place" | "disabled"` + tests for every combination
-- [ ] legacy `Editor` Edit/Browse: `update_note(parent=editor.parentWindow, note=captured)`; windows reload themselves
-- [ ] legacy `Editor` Add: write fields onto `editor.note`, `editor.loadNote()`; no collection write
-- [ ] `NewEditor` Edit: `update_note` then `editor.reload_note()`; `NewEditor` Add (`nid` None): button disabled with tooltip
-- [ ] run tests — must pass before Task 8
+- [x] `buttons.append(editor.addButton(...))` in `gui_hooks.editor_did_init_buttons` (callback already runs after save)
+- [x] detect the Svelte editor without importing it unguarded: `NewEditor = getattr(aqt.editor, "NewEditor", None)`; `is_new_editor = NewEditor is not None and isinstance(editor, NewEditor)`
+- [x] pure `editor_mode(is_new_editor, has_note_in_col, is_add_window) -> "update" | "fill_in_place" | "disabled"` + tests for every combination
+- [x] legacy `Editor` Edit/Browse: `update_note(parent=editor.parentWindow, note=captured)`; windows reload themselves
+- [x] legacy `Editor` Add: write fields onto `editor.note`, `editor.loadNote()`; no collection write
+- [x] `NewEditor` Edit: `update_note` then `editor.reload_note()`; `NewEditor` Add (`nid` None): button disabled with tooltip
+- [x] run tests — must pass before Task 8
 
 ### Task 8: Prompts tab and deck → prompt mapping UI
 

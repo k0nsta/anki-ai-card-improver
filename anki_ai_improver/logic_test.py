@@ -1,5 +1,5 @@
 from anki_ai_improver.client import Proposal
-from anki_ai_improver.logic import is_stale, merge_accepted, review_shortcut
+from anki_ai_improver.logic import editor_mode, is_stale, merge_accepted, review_shortcut
 from anki_ai_improver.prompts import NoteSnapshot
 
 
@@ -55,3 +55,14 @@ def test_review_shortcut_uses_custom_value() -> None:
 
 def test_review_shortcut_can_be_disabled() -> None:
     assert review_shortcut({"shortcut": ""}) is None
+
+
+def test_editor_mode_combinations() -> None:
+    assert editor_mode(False, False, False) == "disabled"
+    assert editor_mode(False, True, False) == "update"
+    assert editor_mode(False, False, True) == "fill_in_place"
+    assert editor_mode(False, True, True) == "fill_in_place"
+    assert editor_mode(True, False, False) == "disabled"
+    assert editor_mode(True, True, False) == "update"
+    assert editor_mode(True, False, True) == "disabled"
+    assert editor_mode(True, True, True) == "disabled"

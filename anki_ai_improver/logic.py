@@ -6,6 +6,15 @@ from .client import Proposal
 from .prompts import NoteSnapshot
 
 
+def editor_mode(is_new_editor: bool, has_note_in_col: bool, is_add_window: bool) -> str:
+    """Choose how an editor button can safely apply accepted suggestions."""
+    if is_add_window:
+        return "disabled" if is_new_editor else "fill_in_place"
+    if has_note_in_col:
+        return "update"
+    return "disabled"
+
+
 def review_shortcut(config: Mapping[str, object]) -> tuple[str, str] | None:
     """Return the configured reviewer shortcut and its menu label, if enabled."""
     shortcut = config.get("shortcut", "Ctrl+Alt+J")

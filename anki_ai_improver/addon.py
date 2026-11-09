@@ -4,6 +4,7 @@ from collections.abc import Callable
 from pathlib import Path
 from typing import Any
 
+import aqt
 from anki.errors import NotFoundError
 from aqt import gui_hooks, mw
 from aqt.operations import QueryOp
@@ -14,7 +15,7 @@ from .client import Proposal, complete, parse_proposal
 from .config import Settings, load_api_key
 from .dialog import DiffDialog
 from .errors import AiError
-from .logic import review_shortcut
+from .logic import editor_mode, review_shortcut
 from .prompts import NoteSnapshot, build_messages, candidate_deck_ids, resolve_prompt
 from .settings import register_settings, show_settings
 
@@ -64,6 +65,7 @@ def improve(
     snapshot: NoteSnapshot,
     candidate_deck_ids: list[int],
     apply: Callable[[dict[str, str]], None],
+    current_state: Callable[[], tuple[int | None, int | None, int | None]] | None = None,
 ) -> None:
     """Request a proposal, then show a guarded field-by-field review dialog."""
     try:
@@ -97,7 +99,7 @@ def improve(
             list(settings.prompts),
             retry,
             apply,
-            lambda: _current_state(snapshot),
+            current_state or (lambda: _current_state(snapshot)),
         )
         dialog.exec()
 
@@ -191,8 +193,109 @@ def _reviewer_shortcut(state: str, shortcuts: list[tuple[str, Callable]]) -> Non
     shortcuts.append((key, lambda: _improve_reviewer_card(mw.reviewer)))
 
 
+def _capture_editor_note(
+    editor: Any, is_new_editor: bool
+) -> tuple[NoteSnapshot, Any, list[str], list[int]] | None:
+    if is_new_editor:
+        if editor.nid is None:
+            return None
+        try:
+            note = mw.col.get_note(editor.nid)
+        except NotFoundError:
+            return None
+    else:
+        note = editor.note
+
+    if note is None:
+        return None
+    note_type = note.note_type()
+    if note_type is None:
+        return None
+
+    field_names = [field["name"] for field in note_type["flds"]]
+    fields = dict(zip(field_names, note.fields, strict=True))
+    card = getattr(editor, "card", None)
+    deck_id = int(card.current_deck_id()) if card is not None else int(mw.col.decks.current()["id"])
+    parents = mw.col.decks.parents(deck_id)
+    candidate_ids = candidate_deck_ids(deck_id, [int(deck["id"]) for deck in parents])
+    note_id = int(getattr(note, "id", 0) or 0)
+    snapshot = NoteSnapshot(
+        note_id=note_id,
+        mtime=int(getattr(note, "mod", 0) or 0),
+        card_id=note_id,
+        note_type=note_type["name"],
+        deck_name=mw.col.decks.name(deck_id),
+        tags=list(note.tags),
+        fields=fields,
+    )
+    return snapshot, note, field_names, candidate_ids
+
+
+def _improve_editor_note(editor: Any, is_new_editor: bool, mode: str) -> None:
+    captured = _capture_editor_note(editor, is_new_editor)
+    if captured is None:
+        return
+    snapshot, note, field_names, deck_ids = captured
+
+    def apply(fields: dict[str, str]) -> None:
+        note.fields = [fields[name] for name in field_names]
+        if mode == "fill_in_place":
+            editor.loadNote()
+            return
+        operation = update_note(parent=editor.parentWindow, note=note)
+        if is_new_editor:
+            operation.success(lambda _changes: editor.reload_note())
+        operation.run_in_background()
+
+    if mode == "fill_in_place":
+        current_state = lambda: (snapshot.note_id, snapshot.mtime, snapshot.card_id)
+    else:
+        current_state = lambda: _editor_current_state(snapshot.note_id)
+    improve(editor.parentWindow, snapshot, deck_ids, apply, current_state)
+
+
+def _editor_current_state(note_id: int) -> tuple[int | None, int | None, int | None]:
+    try:
+        note = mw.col.get_note(note_id)
+    except NotFoundError:
+        return None, None, None
+    if note is None:
+        return None, None, None
+    return note.id, note.mod, note.id
+
+
+def _editor_did_init_buttons(buttons: list[str], editor: Any) -> None:
+    NewEditor = getattr(aqt.editor, "NewEditor", None)
+    is_new_editor = NewEditor is not None and isinstance(editor, NewEditor)
+    is_add_window = bool(editor.addMode)
+    has_note_in_col = (
+        editor.nid is not None if is_new_editor else not is_add_window and editor.note is not None
+    )
+    mode = editor_mode(is_new_editor, has_note_in_col, is_add_window)
+    tooltip = (
+        "AI suggestions are unavailable until this note is added."
+        if mode == "disabled"
+        else "Improve this note with AI"
+    )
+
+    def trigger(active_editor: Any) -> None:
+        _improve_editor_note(active_editor, is_new_editor, mode)
+
+    button = editor.addButton(
+        None,
+        "improve_ai",
+        trigger,
+        tip=tooltip,
+        label="Improve with AI",
+    )
+    if mode == "disabled":
+        button = button.replace("<button", "<button disabled", 1)
+    buttons.append(button)
+
+
 gui_hooks.reviewer_will_show_context_menu.append(_reviewer_context_menu)
 gui_hooks.state_shortcuts_will_change.append(_reviewer_shortcut)
+gui_hooks.editor_did_init_buttons.append(_editor_did_init_buttons)
 
 
 register_settings()
