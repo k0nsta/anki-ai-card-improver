@@ -5,15 +5,17 @@ from pathlib import Path
 from typing import Any
 
 from anki.errors import NotFoundError
-from aqt import mw
+from aqt import gui_hooks, mw
 from aqt.operations import QueryOp
+from aqt.operations.note import update_note
 from aqt.qt import QDialog, QMessageBox, QTextBrowser, QVBoxLayout
 
 from .client import Proposal, complete, parse_proposal
 from .config import Settings, load_api_key
 from .dialog import DiffDialog
 from .errors import AiError
-from .prompts import NoteSnapshot, build_messages, resolve_prompt
+from .logic import review_shortcut
+from .prompts import NoteSnapshot, build_messages, candidate_deck_ids, resolve_prompt
 from .settings import register_settings, show_settings
 
 
@@ -126,6 +128,71 @@ def _run_request(
         .with_progress()
         .run_in_background()
     )
+
+
+def _capture_reviewer_note(
+    reviewer: Any,
+) -> tuple[NoteSnapshot, Any, list[str], list[int]] | None:
+    card = getattr(reviewer, "card", None)
+    if card is None:
+        return None
+    note = card.note()
+    if note is None:
+        return None
+
+    note_type = note.note_type()
+    if note_type is None:
+        return None
+    field_names = [field["name"] for field in note_type["flds"]]
+    fields = dict(zip(field_names, note.fields, strict=True))
+    deck_id = int(card.current_deck_id())
+    parents = mw.col.decks.parents(deck_id)
+    candidate_ids = candidate_deck_ids(deck_id, [int(deck["id"]) for deck in parents])
+    snapshot = NoteSnapshot(
+        note_id=int(note.id),
+        mtime=int(note.mod),
+        card_id=int(card.id),
+        note_type=note_type["name"],
+        deck_name=mw.col.decks.name(deck_id),
+        tags=list(note.tags),
+        fields=fields,
+    )
+    return snapshot, note, field_names, candidate_ids
+
+
+def _improve_reviewer_card(reviewer: Any) -> None:
+    captured = _capture_reviewer_note(reviewer)
+    if captured is None:
+        return
+    snapshot, note, field_names, deck_ids = captured
+
+    def apply(fields: dict[str, str]) -> None:
+        note.fields = [fields[name] for name in field_names]
+        update_note(parent=mw, note=note).run_in_background()
+
+    improve(mw, snapshot, deck_ids, apply)
+
+
+def _reviewer_context_menu(reviewer: Any, menu: Any) -> None:
+    action = menu.addAction("Improve card with AI")
+    action.triggered.connect(lambda: _improve_reviewer_card(reviewer))
+
+
+def _reviewer_shortcut(state: str, shortcuts: list[tuple[str, Callable]]) -> None:
+    if state != "review":
+        return
+    config = mw.addonManager.getConfig(_addon_name())
+    if not isinstance(config, dict):
+        return
+    configured = review_shortcut(config)
+    if configured is None:
+        return
+    key, _label = configured
+    shortcuts.append((key, lambda: _improve_reviewer_card(mw.reviewer)))
+
+
+gui_hooks.reviewer_will_show_context_menu.append(_reviewer_context_menu)
+gui_hooks.state_shortcuts_will_change.append(_reviewer_shortcut)
 
 
 register_settings()

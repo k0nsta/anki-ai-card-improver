@@ -1,9 +1,17 @@
 """Pure helpers shared by the add-on's UI flows."""
 
-from collections.abc import Iterable
+from collections.abc import Iterable, Mapping
 
 from .client import Proposal
 from .prompts import NoteSnapshot
+
+
+def review_shortcut(config: Mapping[str, object]) -> tuple[str, str] | None:
+    """Return the configured reviewer shortcut and its menu label, if enabled."""
+    shortcut = config.get("shortcut", "Ctrl+Alt+J")
+    if not isinstance(shortcut, str) or not shortcut.strip():
+        return None
+    return shortcut, "Improve card with AI"
 
 
 def merge_accepted(

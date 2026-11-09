@@ -1,5 +1,5 @@
 from anki_ai_improver.client import Proposal
-from anki_ai_improver.logic import is_stale, merge_accepted
+from anki_ai_improver.logic import is_stale, merge_accepted, review_shortcut
 from anki_ai_improver.prompts import NoteSnapshot
 
 
@@ -40,3 +40,18 @@ def test_is_stale_when_target_switched() -> None:
 
 def test_is_not_stale_when_snapshot_is_current() -> None:
     assert not is_stale(_snapshot(), 10, 100, 20)
+
+
+def test_review_shortcut_uses_default() -> None:
+    assert review_shortcut({}) == ("Ctrl+Alt+J", "Improve card with AI")
+
+
+def test_review_shortcut_uses_custom_value() -> None:
+    assert review_shortcut({"shortcut": "Alt+Shift+I"}) == (
+        "Alt+Shift+I",
+        "Improve card with AI",
+    )
+
+
+def test_review_shortcut_can_be_disabled() -> None:
+    assert review_shortcut({"shortcut": ""}) is None

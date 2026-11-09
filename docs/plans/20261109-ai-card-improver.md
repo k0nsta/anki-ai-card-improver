@@ -148,11 +148,11 @@ Staleness guard (pure `is_stale(snapshot, current_note_id: int | None, current_m
 **Files:**
 - Modify: `anki_ai_improver/addon.py`, `anki_ai_improver/logic.py`, `anki_ai_improver/logic_test.py`
 
-- [ ] context-menu entry via `gui_hooks.reviewer_will_show_context_menu`
-- [ ] shortcut via `gui_hooks.state_shortcuts_will_change`, only when `state == "review"`; key from config via pure `review_shortcut(config) -> tuple[str, str] | None` (`None` = disabled)
-- [ ] apply = fields onto the captured note → `update_note(parent=mw, note=note).run_in_background()` (undo + reviewer redraw)
-- [ ] tests for `review_shortcut` (default, custom, empty → `None`)
-- [ ] run tests — must pass before Task 7
+- [x] context-menu entry via `gui_hooks.reviewer_will_show_context_menu`
+- [x] shortcut via `gui_hooks.state_shortcuts_will_change`, only when `state == "review"`; key from config via pure `review_shortcut(config) -> tuple[str, str] | None` (`None` = disabled)
+- [x] apply = fields onto the captured note → `update_note(parent=mw, note=note).run_in_background()` (undo + reviewer redraw)
+- [x] tests for `review_shortcut` (default, custom, empty → `None`)
+- [x] run tests — must pass before Task 7
 
 ### Task 7: Editor trigger (both editors)
 
