@@ -135,13 +135,13 @@ Staleness guard (pure `is_stale(snapshot, current_note_id: int | None, current_m
 - Modify: `anki_ai_improver/import_test.py` (add the logic module)
 - Create: `anki_ai_improver/addon.py`, `anki_ai_improver/dialog.py`, `anki_ai_improver/settings.py`
 
-- [ ] `logic.py` (pure): `merge_accepted(fields, proposal, accepted_names)`, `is_stale` per Technical Details
-- [ ] `settings.py`: minimal dialog with masked API key (writes `secret.json`), base URL, model; registered via `mw.addonManager.setConfigAction` + Tools menu
-- [ ] `addon.py` `improve(parent, snapshot, candidate_deck_ids, apply)`: no key/config → open the key dialog; else `QueryOp(op=network call).without_collection().failure(show AiError).with_progress().run_in_background()`; snapshot built on main thread before the op
-- [ ] `dialog.py` `DiffDialog`: per changed field old/new as plain text in `QTextBrowser` (never `AnkiWebView`), checkbox each (default ticked), prompt dropdown + Retry, raw response view on `bad_response`
-- [ ] on accept: `is_stale` → warn and stop; else `apply(merge_accepted(...))`
-- [ ] tests for `merge_accepted` and `is_stale` (note deleted, mtime changed, target switched, fresh)
-- [ ] run tests — must pass before Task 6
+- [x] `logic.py` (pure): `merge_accepted(fields, proposal, accepted_names)`, `is_stale` per Technical Details
+- [x] `settings.py`: minimal dialog with masked API key (writes `secret.json`), base URL, model; registered via `mw.addonManager.setConfigAction` + Tools menu
+- [x] `addon.py` `improve(parent, snapshot, candidate_deck_ids, apply)`: no key/config → open the key dialog; else `QueryOp(op=network call).without_collection().failure(show AiError).with_progress().run_in_background()`; snapshot built on main thread before the op
+- [x] `dialog.py` `DiffDialog`: per changed field old/new as plain text in `QTextBrowser` (never `AnkiWebView`), checkbox each (default ticked), prompt dropdown + Retry, raw response view on `bad_response`
+- [x] on accept: `is_stale` → warn and stop; else `apply(merge_accepted(...))`
+- [x] tests for `merge_accepted` and `is_stale` (note deleted, mtime changed, target switched, fresh)
+- [x] run tests — must pass before Task 6
 
 ### Task 6: Reviewer trigger
 
