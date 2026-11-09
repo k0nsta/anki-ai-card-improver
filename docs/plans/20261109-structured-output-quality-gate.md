@@ -51,6 +51,11 @@ click → snapshot + deck prompt
 - Decisions URL derived from `base_url`: `https://openrouter.ai/api/v1` → `https://openrouter.ai/api/alpha/decisions` (replace a trailing `/v1`). The gate is available only when `base_url` is on `openrouter.ai`; otherwise the setting is disabled with a hint.
 - Gate question (deck-agnostic):
   - id `correctness`, type `score`, instructions "How correct is this flashcard: facts, language, translations, code and formulas, with no self-contradictions?", criteria `["several clear errors", "one or two clear errors", "minor issues", "essentially correct, small awkwardness", "fully correct and natural"]`.
+- Gate input: the merged full card (original fields with the proposal applied), HTML stripped (`<br>` → newline, other tags removed), plus note type and deck. The fix call gets the merged full fields as HTML.
+- Gate status strings: off → `""`; on but `base_url` not OpenRouter → `"⚠ unchecked: quality gate needs OpenRouter"`; passed → `"✓ checked"`; fixed → `"✓ fixed after check"`; gate or fix call failed → `"⚠ unchecked: <reason>"` with the draft kept.
+- `Proposal` gains `status: str = ""`; the op, Retry and `DiffDialog.receive` carry it unchanged.
+- `gate_min_correctness` not a number or outside 0–4 → falls back to 2.5 (no error).
+- Migration of saved configs (only untouched values): `prompts.default` equal to the old one-liner `Fix factual and spelling errors, make the card clearer and more concise. Keep the language of each field.` → the generic prompt; `model` equal to `anthropic/claude-sonnet-5-5` → `openai/gpt-6-luna`; anything else stays. Applied when settings load, written back with `mw.addonManager.writeConfig`.
 - New config keys (defaults): `"gate_enabled": false`, `"gate_model": "typesafe/jev-1.14"`, `"gate_min_correctness": 2.5`.
 - Fix-call system message: deck prompt + "An automatic quality check rated this card's correctness {score:.1f}/4. Find and fix factual, language and translation errors; keep everything that is correct." + output rules; user message: `{"original_note": …, "draft": …}`.
 
@@ -103,8 +108,9 @@ click → snapshot + deck prompt
 - [ ] `decisions_url(base_url) -> str | None` (None when not openrouter.ai)
 - [ ] `score_correctness(settings, api_key, snapshot_fields_text, note_type, deck, session=requests) -> float` posting the question from Technical Details; maps HTTP/timeout/network/bad JSON to `AiError`
 - [ ] `needs_fix(score, minimum) -> bool`
-- [ ] `Settings`: `gate_enabled`, `gate_model`, `gate_min_correctness` with defaults; validation (0 ≤ min ≤ 4)
-- [ ] tests: URL derivation (openrouter, trailing slash, other host → None), request body shape, score parsing, error mapping, `needs_fix` boundaries, settings defaults and validation
+- [ ] `Settings`: `gate_enabled`, `gate_model`, `gate_min_correctness` with defaults; a non-number or out-of-range minimum falls back to 2.5
+- [ ] `card_text(fields) -> dict[str, str]`: strip HTML for the gate input (`<br>` → newline)
+- [ ] tests: URL derivation (openrouter, trailing slash, other host → None), request body shape, score parsing, error mapping, `needs_fix` boundaries, `card_text`, settings defaults and the 2.5 fallback (string, -1, 5)
 - [ ] run tests — must pass before Task 5
 
 ### Task 5: Wire the gate into the improve flow and dialog
@@ -114,12 +120,14 @@ click → snapshot + deck prompt
 - Modify: `anki_ai_improver/dialog.py`
 - Modify: `anki_ai_improver/logic.py`
 - Modify: `anki_ai_improver/logic_test.py`
+- Modify: `anki_ai_improver/client.py`
 
-- [ ] in the background op: draft → if gate enabled and available: score → fix call when `needs_fix` → return proposal + status
+- [ ] `Proposal` (`client.py`) gains `status: str = ""`
+- [ ] in the background op: draft → if gate enabled and available: score the merged card text → fix call when `needs_fix` → return the proposal with its status
 - [ ] pure `gate_status(enabled, available, score, fixed, error) -> str` producing the dialog status line from Solution Overview
-- [ ] gate errors never fail the request: draft kept, status "⚠ unchecked: <reason>"
+- [ ] gate or fix-call errors never fail the request: draft kept, status "⚠ unchecked: <reason>"; gate enabled with a non-OpenRouter `base_url` → "⚠ unchecked: quality gate needs OpenRouter"
 - [ ] `DiffDialog` shows the status line; Retry re-runs the whole flow
-- [ ] tests for `gate_status` (off, unavailable, passed, fixed, error)
+- [ ] tests for `gate_status` (off, needs OpenRouter, passed, fixed, gate error, fix-call error)
 - [ ] run tests — must pass before Task 6
 
 ### Task 6: Settings: gate controls
@@ -135,11 +143,17 @@ click → snapshot + deck prompt
 
 **Files:**
 - Modify: `anki_ai_improver/config.json`
+- Modify: `anki_ai_improver/config.py`
+- Modify: `anki_ai_improver/config_test.py`
+- Modify: `anki_ai_improver/addon.py`
 - Create: `docs/prompts/generic.md`, `docs/prompts/english.md`, `docs/prompts/portuguese.md`
 - Modify: `README.md`
 - Modify: `CLAUDE.md`
 
 - [ ] `config.json`: `"model": "openai/gpt-6-luna"`; `prompts.default` = the generic prompt below (verbatim)
+- [ ] `config.py` `_DEFAULT_PROMPTS['default']` = the same generic prompt; test that it equals `config.json`'s `prompts.default`
+- [ ] pure `migrate_config(values) -> (values, changed)` per Technical Details; `addon.py` applies it when loading settings and writes the config back only when `changed`
+- [ ] tests for `migrate_config`: old prompt replaced, edited prompt kept, old model replaced, other model kept, already-migrated config unchanged
 - [ ] create the three prompt files with the verbatim texts below
 - [ ] README: "Prompts" section — the default works for any deck; per-deck prompts own content only; links to the three examples; how to map them in the Decks tab
 - [ ] README: "Quality gate" section — what it checks, cost/latency, OpenRouter only, off by default; model cost table (gpt-6-luna ~$0.0005/card ~8 s, claude-haiku-5.5 ~$0.001/card)
@@ -246,7 +260,8 @@ The note's current content is the topic (a bare word, a draft or an old card). R
 - Run: `uv run python -c "import sys, anki_ai_improver.gate; assert 'aqt' not in sys.modules"`
 - `client_test.py` covers the json_schema → json_object → none fallback chain and newline/fence normalisation
 - `gate_test.py` covers URL derivation, request shape, score parsing, error mapping and `needs_fix` boundaries
-- `logic_test.py` covers every `gate_status` outcome; a gate error never blocks the proposal
+- `logic_test.py` covers every `gate_status` outcome; a gate or fix-call error never blocks the proposal
+- `config_test.py` covers `migrate_config` (untouched values migrated, edited values kept) and the 2.5 fallback
 
 ## Post-Completion
 *Informational only*
