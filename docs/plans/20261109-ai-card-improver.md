@@ -52,7 +52,7 @@ Default `config.json` (user edits land in `meta.json`):
 ```
 `decks` maps deck id (string) → prompt name. Example English/Portuguese prompts go in the README.
 
-Key: env `ANKI_AI_API_KEY` → else `user_files/secret.json` `{"api_key": "..."}` (chmod 600). Never in `config.json` or `meta.json`.
+Key: only `user_files/secret.json` `{"api_key": "..."}` (chmod 600), set through the masked key dialog. No env var (Dock/menu-launched Anki never sees it). Never in `config.json` or `meta.json`.
 
 Prompt resolution: candidates = `[card.current_deck_id()] + [d["id"] for d in reversed(col.decks.parents(did))]` (nearest parent first) → first id present in `decks` whose prompt exists → else `default_prompt`. Pure function takes the ordered id list.
 
@@ -94,8 +94,8 @@ Staleness guard (pure `is_stale(snapshot, current)`): on accept, refuse when the
 - Create: `anki_ai_improver/config.py`, `anki_ai_improver/config_test.py`
 
 - [ ] `Settings` dataclass + `from_dict(dict)`; missing `base_url`/`model` → `AiError("no_config")`
-- [ ] `load_api_key(user_files: Path, env: Mapping)`: env first, then `secret.json`; `save_api_key(...)` writes with mode 600
-- [ ] tests: defaults, missing fields, env override wins, file round-trip + mode 600, absent file → None
+- [ ] `load_api_key(user_files: Path)` reads `secret.json`; `save_api_key(...)` writes with mode 600
+- [ ] tests: defaults, missing fields, file round-trip + mode 600, absent or corrupt file → None
 - [ ] run tests — must pass before Task 3
 
 ### Task 3: Prompt resolution and message build (`prompts.py`)
@@ -127,7 +127,7 @@ Staleness guard (pure `is_stale(snapshot, current)`): on accept, refuse when the
 - Create: `anki_ai_improver/addon.py`, `anki_ai_improver/dialog.py`, `anki_ai_improver/settings.py`
 
 - [ ] `logic.py` (pure): `merge_accepted(fields, proposal, accepted_names)`, `is_stale(snapshot, current_note_id, current_mtime, current_target_id)`
-- [ ] `settings.py`: minimal dialog with masked API key (writes `secret.json`; shows "set via ANKI_AI_API_KEY" when env present), base URL, model; registered via `mw.addonManager.setConfigAction` + Tools menu
+- [ ] `settings.py`: minimal dialog with masked API key (writes `secret.json`), base URL, model; registered via `mw.addonManager.setConfigAction` + Tools menu
 - [ ] `addon.py` `improve(parent, snapshot, candidate_deck_ids, apply)`: no key/config → open the key dialog; else `QueryOp(op=network call).without_collection().failure(show AiError).with_progress().run_in_background()`; snapshot built on main thread before the op
 - [ ] `dialog.py` `DiffDialog`: per changed field old/new as plain text in `QTextBrowser` (never `AnkiWebView`), checkbox each (default ticked), prompt dropdown + Retry, raw response view on `bad_response`
 - [ ] on accept: `is_stale` → warn and stop; else `apply(merge_accepted(...))`
@@ -159,13 +159,15 @@ Staleness guard (pure `is_stale(snapshot, current)`): on accept, refuse when the
 - [ ] run tests — must pass before Task 8
 - [ ] manual check: Edit, Browse, Add in legacy editor; Edit + Add in Svelte editor experiment
 
-### Task 8: Deck → prompt mapping UI
+### Task 8: Prompts tab and deck → prompt mapping UI
 
 **Files:**
 - Modify: `anki_ai_improver/settings.py`, `anki_ai_improver/config.py`, `anki_ai_improver/config_test.py`
 
-- [ ] settings dialog gets a table: deck (picker, stores deck id) → prompt name (dropdown from `prompts`); prompt texts stay in Anki's JSON config editor
-- [ ] pure `set_deck_prompt(config, deck_id, name)` / `remove_deck_prompt(...)` + tests (add, replace, remove, unknown prompt rejected)
+- [ ] Prompts tab: list of prompts (add / rename / delete) + multi-line text box; default prompt marked and not deletable
+- [ ] Decks tab: table deck (picker, stores deck id) → prompt name (dropdown from `prompts`)
+- [ ] pure config helpers: `add_prompt`, `rename_prompt` (rewrites `decks` and `default_prompt` references), `delete_prompt` (refuses default; removes its deck mappings), `set_deck_prompt`, `remove_deck_prompt`
+- [ ] tests: add duplicate name rejected, rename updates mappings + default, delete default refused, delete clears mappings, set/replace/remove mapping, unknown prompt rejected
 - [ ] run tests — must pass before Task 9
 - [ ] manual check: save, reopen; API key appears in neither `meta.json` nor `config.json`
 
