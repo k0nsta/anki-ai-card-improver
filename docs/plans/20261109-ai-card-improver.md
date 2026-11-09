@@ -107,13 +107,13 @@ Staleness guard (pure `is_stale(snapshot, current_note_id: int | None, current_m
 - Create: `anki_ai_improver/prompts.py`, `anki_ai_improver/prompts_test.py`
 - Modify: `anki_ai_improver/import_test.py` (add the prompts module)
 
-- [ ] `candidate_deck_ids(current_did, parent_ids_root_first)` → `[current, nearest parent, …, root]`
-- [ ] `resolve_prompt(candidate_deck_ids: list[int], settings) -> (name, text)`
-- [ ] `NoteSnapshot` (note id, mtime, card id, note type, deck name, tags, ordered fields) + `build_messages(prompt_text, snapshot)`
-- [ ] tests: `candidate_deck_ids` order (root, child, grandchild)
-- [ ] tests: exact deck, subdeck inherits parent, grandchild picks nearest mapped parent, unmapped → default, mapped prompt name missing from `prompts` → default
-- [ ] tests: messages contain all field names and the JSON contract
-- [ ] run tests — must pass before Task 4
+- [x] `candidate_deck_ids(current_did, parent_ids_root_first)` → `[current, nearest parent, …, root]`
+- [x] `resolve_prompt(candidate_deck_ids: list[int], settings) -> (name, text)`
+- [x] `NoteSnapshot` (note id, mtime, card id, note type, deck name, tags, ordered fields) + `build_messages(prompt_text, snapshot)`
+- [x] tests: `candidate_deck_ids` order (root, child, grandchild)
+- [x] tests: exact deck, subdeck inherits parent, grandchild picks nearest mapped parent, unmapped → default, mapped prompt name missing from `prompts` → default
+- [x] tests: messages contain all field names and the JSON contract
+- [x] run tests — must pass before Task 4
 
 ### Task 4: OpenAI-compatible client and response parsing (`client.py`)
 
