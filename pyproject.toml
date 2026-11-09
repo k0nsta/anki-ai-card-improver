@@ -1,0 +1,17 @@
+[project]
+name = "anki-ai-improver"
+version = "0.1.0"
+requires-python = ">=3.13"
+
+[dependency-groups]
+dev = ["pytest", "ruff", "mypy"]
+
+[tool.pytest.ini_options]
+python_files = ["*_test.py"]
+testpaths = ["anki_ai_improver"]
+
+[tool.ruff]
+line-length = 100
+
+[tool.mypy]
+strict = true
