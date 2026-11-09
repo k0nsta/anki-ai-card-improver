@@ -172,11 +172,11 @@ Staleness guard (pure `is_stale(snapshot, current_note_id: int | None, current_m
 **Files:**
 - Modify: `anki_ai_improver/settings.py`, `anki_ai_improver/config.py`, `anki_ai_improver/config_test.py`
 
-- [ ] Prompts tab: list of prompts (add / rename / delete) + multi-line text box; default prompt marked and not deletable
-- [ ] Decks tab: table deck (picker, stores deck id) → prompt name (dropdown from `prompts`)
-- [ ] pure config helpers: `add_prompt`, `rename_prompt` (rewrites `decks` and `default_prompt` references), `delete_prompt` (refuses default; removes its deck mappings), `set_deck_prompt`, `remove_deck_prompt`
-- [ ] tests: add duplicate name rejected, rename updates mappings + default, delete default refused, delete clears mappings, set/replace/remove mapping, unknown prompt rejected
-- [ ] run tests — must pass before Task 9
+- [x] Prompts tab: list of prompts (add / rename / delete) + multi-line text box; default prompt marked and not deletable
+- [x] Decks tab: table deck (picker, stores deck id) → prompt name (dropdown from `prompts`)
+- [x] pure config helpers: `add_prompt`, `rename_prompt` (rewrites `decks` and `default_prompt` references), `delete_prompt` (refuses default; removes its deck mappings), `set_deck_prompt`, `remove_deck_prompt`
+- [x] tests: add duplicate name rejected, rename updates mappings + default, delete default refused, delete clears mappings, set/replace/remove mapping, unknown prompt rejected
+- [x] run tests — must pass before Task 9
 
 ### Task 9: [Final] Update documentation
 

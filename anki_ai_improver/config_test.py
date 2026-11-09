@@ -4,7 +4,16 @@ from pathlib import Path
 
 import pytest
 
-from anki_ai_improver.config import Settings, load_api_key, save_api_key
+from anki_ai_improver.config import (
+    Settings,
+    add_prompt,
+    delete_prompt,
+    load_api_key,
+    remove_deck_prompt,
+    rename_prompt,
+    save_api_key,
+    set_deck_prompt,
+)
 from anki_ai_improver.errors import AiError
 
 
@@ -56,3 +65,76 @@ def test_save_api_key_creates_missing_user_files(tmp_path: Path) -> None:
 
     assert user_files.is_dir()
     assert load_api_key(user_files) == "secret-value"
+
+
+def test_add_prompt_rejects_duplicate_name() -> None:
+    settings = Settings(
+        base_url="https://example.test/v1",
+        model="model",
+        prompts={"default": "Keep it clear."},
+    )
+
+    with pytest.raises(ValueError, match="already exists"):
+        add_prompt(settings, "default", "Another prompt")
+
+
+def test_rename_prompt_updates_deck_mappings_and_default() -> None:
+    settings = Settings(
+        base_url="https://example.test/v1",
+        model="model",
+        default_prompt="old",
+        prompts={"default": "Default", "old": "Prompt"},
+        decks={"10": "old", "20": "default"},
+    )
+
+    renamed = rename_prompt(settings, "old", "new")
+
+    assert renamed.prompts == {"default": "Default", "new": "Prompt"}
+    assert renamed.decks == {"10": "new", "20": "default"}
+    assert renamed.default_prompt == "new"
+    assert settings.default_prompt == "old"
+
+
+def test_delete_prompt_refuses_default() -> None:
+    settings = Settings(base_url="url", model="model")
+
+    with pytest.raises(ValueError, match="default prompt"):
+        delete_prompt(settings, "default")
+
+
+def test_delete_prompt_clears_deck_mappings() -> None:
+    settings = Settings(
+        base_url="url",
+        model="model",
+        prompts={"default": "Default", "other": "Other"},
+        decks={"10": "other", "20": "default"},
+    )
+
+    deleted = delete_prompt(settings, "other")
+
+    assert deleted.prompts == {"default": "Default"}
+    assert deleted.decks == {"20": "default"}
+
+
+def test_set_replace_and_remove_deck_prompt_mapping() -> None:
+    settings = Settings(
+        base_url="url",
+        model="model",
+        prompts={"default": "Default", "other": "Other"},
+    )
+
+    mapped = set_deck_prompt(settings, 10, "default")
+    replaced = set_deck_prompt(mapped, "10", "other")
+    removed = remove_deck_prompt(replaced, 10)
+
+    assert mapped.decks == {"10": "default"}
+    assert replaced.decks == {"10": "other"}
+    assert removed.decks == {}
+    assert settings.decks == {}
+
+
+def test_set_deck_prompt_rejects_unknown_prompt() -> None:
+    settings = Settings(base_url="url", model="model")
+
+    with pytest.raises(ValueError, match="Unknown prompt"):
+        set_deck_prompt(settings, 10, "missing")
