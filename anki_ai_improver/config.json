@@ -1,0 +1,11 @@
+{
+  "base_url": "https://openrouter.ai/api/v1",
+  "model": "anthropic/claude-sonnet-5-5",
+  "timeout_s": 60,
+  "shortcut": "Ctrl+Alt+J",
+  "default_prompt": "default",
+  "prompts": {
+    "default": "Fix factual and spelling errors, make the card clearer and more concise. Keep the language of each field."
+  },
+  "decks": {}
+}

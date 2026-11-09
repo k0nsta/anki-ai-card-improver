@@ -83,12 +83,12 @@ Staleness guard (pure `is_stale(snapshot, current_note_id: int | None, current_m
 - Modify: `pyproject.toml`, `uv.lock`, `.gitignore` (bootstrapped before the run; `Makefile` is final, do not change it)
 - Create: `README.md`
 
-- [ ] `__init__.py`: `try: from aqt import mw` / `except ImportError: mw = None`; `if mw: from . import addon` (addon.py added in Task 5)
-- [ ] `manifest.json` (`package`, `name`, `min_point_version`: 260900 — Anki 26.09+, both editors present there) and default `config.json` from Technical Details
-- [ ] `errors.py`: `AiError(kind, message)` with the kinds from Technical Details
-- [ ] `pyproject.toml`: add `requests` and `types-requests` to dev deps (Anki provides `requests` at runtime), `uv lock`; mypy overrides for `aqt`/`anki` and the Qt modules are already bootstrapped
-- [ ] `.gitignore`: add `user_files/`, `*.ankiaddon`, `dist/`
-- [ ] `import_test.py`: `anki_ai_improver` and `anki_ai_improver.errors` import without `aqt` loaded; Tasks 2–5 each add their new pure module to it
+- [x] `__init__.py`: `try: from aqt import mw` / `except ImportError: mw = None`; `if mw: from . import addon` (addon.py added in Task 5)
+- [x] `manifest.json` (`package`, `name`, `min_point_version`: 260900 — Anki 26.09+, both editors present there) and default `config.json` from Technical Details
+- [x] `errors.py`: `AiError(kind, message)` with the kinds from Technical Details
+- [x] `pyproject.toml`: add `requests` and `types-requests` to dev deps (Anki provides `requests` at runtime), `uv lock`; mypy overrides for `aqt`/`anki` and the Qt modules are already bootstrapped
+- [x] `.gitignore`: add `user_files/`, `*.ankiaddon`, `dist/`
+- [x] `import_test.py`: `anki_ai_improver` and `anki_ai_improver.errors` import without `aqt` loaded; Tasks 2–5 each add their new pure module to it
 
 ### Task 2: Config and secret storage (`config.py`)
 
