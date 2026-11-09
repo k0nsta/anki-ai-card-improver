@@ -1,6 +1,7 @@
 """Configuration parsing and API key storage for the add-on."""
 
 import json
+import math
 import os
 from dataclasses import dataclass, field, replace
 from pathlib import Path
@@ -8,12 +9,41 @@ from typing import Any
 
 from .errors import AiError
 
-_DEFAULT_PROMPTS = {
-    "default": (
-        "Fix factual and spelling errors, make the card clearer and more concise. "
-        "Keep the language of each field."
-    )
-}
+_GENERIC_PROMPT = """You improve one Anki flashcard for spaced repetition. The deck can be about anything (a language, history, medicine, programming...): infer the subject and the card's direction from its current content.
+
+- Keep the card's purpose, direction, language(s) and field roles. Do not turn it into a different card.
+- Never drop content in another language or notation (translations, transcriptions/IPA, formulas, code); fix it instead.
+- Keep the spelling variety already used (British/American, European/Brazilian Portuguese...).
+- Front: one clear cue that makes the learner recall a single answer; it must not contain that answer.
+- Back: the answer first, short and precise; then only the detail needed to remember and understand it.
+- Extra fields (examples, notes, sources): keep their role; fix, tighten, and add one concrete example or mnemonic only if it really helps recall.
+- Fix factual, spelling and grammar errors. Never invent facts; if unsure, keep the original wording.
+- Concise and readable on a phone: short lines, no filler, no repetition between fields.
+- If the card tries to teach several things, keep the core one and end the last field with `MORE CARDS: <topic>, <topic>`."""
+_DEFAULT_PROMPTS = {"default": _GENERIC_PROMPT}
+_OLD_DEFAULT_PROMPT = (
+    "Fix factual and spelling errors, make the card clearer and more concise. "
+    "Keep the language of each field."
+)
+_OLD_DEFAULT_MODEL = "anthropic/claude-sonnet-5-5"
+_DEFAULT_MODEL = "openai/gpt-6-luna"
+_DEFAULT_GATE_MODEL = "typesafe/jev-1.14"
+_DEFAULT_GATE_MIN_CORRECTNESS = 2.5
+
+
+def migrate_config(values: dict[str, Any]) -> tuple[dict[str, Any], bool]:
+    """Migrate only untouched legacy defaults without mutating the input."""
+    migrated = values.copy()
+    changed = False
+    prompts = values.get("prompts")
+    if isinstance(prompts, dict) and prompts.get("default") == _OLD_DEFAULT_PROMPT:
+        migrated["prompts"] = prompts.copy()
+        migrated["prompts"]["default"] = _GENERIC_PROMPT
+        changed = True
+    if values.get("model") == _OLD_DEFAULT_MODEL:
+        migrated["model"] = _DEFAULT_MODEL
+        changed = True
+    return migrated, changed
 
 
 @dataclass
@@ -25,6 +55,9 @@ class Settings:
     default_prompt: str = "default"
     prompts: dict[str, str] = field(default_factory=lambda: _DEFAULT_PROMPTS.copy())
     decks: dict[str, str] = field(default_factory=dict)
+    gate_enabled: bool = False
+    gate_model: str = _DEFAULT_GATE_MODEL
+    gate_min_correctness: float = _DEFAULT_GATE_MIN_CORRECTNESS
 
     @classmethod
     def from_dict(cls, values: dict[str, Any]) -> "Settings":
@@ -36,6 +69,15 @@ class Settings:
         if not isinstance(model, str) or not model:
             raise AiError("no_config", "Missing model in add-on config")
 
+        gate_min_correctness = values.get("gate_min_correctness", _DEFAULT_GATE_MIN_CORRECTNESS)
+        if (
+            isinstance(gate_min_correctness, bool)
+            or not isinstance(gate_min_correctness, (int, float))
+            or not math.isfinite(float(gate_min_correctness))
+            or not 0 <= gate_min_correctness <= 4
+        ):
+            gate_min_correctness = _DEFAULT_GATE_MIN_CORRECTNESS
+
         return cls(
             base_url=base_url,
             model=model,
@@ -44,6 +86,9 @@ class Settings:
             default_prompt=values.get("default_prompt", "default"),
             prompts=values.get("prompts", _DEFAULT_PROMPTS.copy()),
             decks=values.get("decks", {}),
+            gate_enabled=values.get("gate_enabled", False),
+            gate_model=values.get("gate_model", _DEFAULT_GATE_MODEL),
+            gate_min_correctness=float(gate_min_correctness),
         )
 
 

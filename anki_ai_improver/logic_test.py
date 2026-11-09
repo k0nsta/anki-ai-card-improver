@@ -1,5 +1,12 @@
 from anki_ai_improver.client import Proposal
-from anki_ai_improver.logic import editor_mode, is_stale, merge_accepted, review_shortcut
+from anki_ai_improver.logic import (
+    editor_mode,
+    gate_status,
+    is_stale,
+    merge_accepted,
+    review_shortcut,
+    run_gate,
+)
 from anki_ai_improver.prompts import NoteSnapshot
 
 
@@ -66,3 +73,99 @@ def test_editor_mode_combinations() -> None:
     assert editor_mode(True, True, False) == "update"
     assert editor_mode(True, False, True) == "disabled"
     assert editor_mode(True, True, True) == "disabled"
+
+
+def test_gate_statuses() -> None:
+    assert gate_status(False, True, None, False, None) == ""
+    assert gate_status(True, False, None, False, None) == (
+        "⚠ unchecked: quality gate needs OpenRouter"
+    )
+    assert gate_status(True, True, 3.0, False, None) == "✓ checked"
+    assert gate_status(True, True, 1.0, True, None) == "✓ fixed after check"
+    assert gate_status(True, True, None, False, ValueError("gate offline")) == (
+        "⚠ unchecked: gate offline"
+    )
+    assert gate_status(True, True, 1.0, False, ValueError("fix offline")) == (
+        "⚠ unchecked: fix offline"
+    )
+
+
+def test_run_gate_off_returns_draft_without_scoring() -> None:
+    draft = Proposal({"Front": "draft"}, "raw")
+
+    def score(_text: dict[str, str]) -> float:
+        raise AssertionError("score should not be called")
+
+    assert run_gate(draft, {}, score, lambda _score: draft, False, True, 2.5) is draft
+
+
+def test_run_gate_unavailable_keeps_draft_with_status() -> None:
+    draft = Proposal({"Front": "draft"}, "raw")
+
+    result = run_gate(draft, {}, lambda _text: 4.0, lambda _score: draft, True, False, 2.5)
+
+    assert result.changed == draft.changed
+    assert result.status == "⚠ unchecked: quality gate needs OpenRouter"
+
+
+def test_run_gate_pass_keeps_draft_as_checked() -> None:
+    draft = Proposal({"Front": "draft"}, "raw")
+    seen: list[dict[str, str]] = []
+
+    def score(text: dict[str, str]) -> float:
+        seen.append(text)
+        return 3.0
+
+    result = run_gate(
+        draft,
+        {"Front": "draft text"},
+        score,
+        lambda _score: Proposal({}, "fixed"),
+        True,
+        True,
+        2.5,
+    )
+
+    assert seen == [{"Front": "draft text"}]
+    assert result.changed == draft.changed
+    assert result.status == "✓ checked"
+
+
+def test_run_gate_low_score_uses_fix_result() -> None:
+    fixed = Proposal({"Front": "fixed"}, "fixed raw")
+    result = run_gate(
+        Proposal({"Front": "draft"}, "raw"),
+        {},
+        lambda _text: 1.0,
+        lambda score: fixed if score == 1.0 else Proposal({}, ""),
+        True,
+        True,
+        2.5,
+    )
+
+    assert result.changed == fixed.changed
+    assert result.status == "✓ fixed after check"
+
+
+def test_run_gate_score_error_keeps_draft_unchecked() -> None:
+    draft = Proposal({"Front": "draft"}, "raw")
+
+    def fail(_text: dict[str, str]) -> float:
+        raise RuntimeError("score failed")
+
+    result = run_gate(draft, {}, fail, lambda _score: Proposal({}, ""), True, True, 2.5)
+
+    assert result.changed == draft.changed
+    assert result.status == "⚠ unchecked: score failed"
+
+
+def test_run_gate_fix_error_keeps_draft_unchecked() -> None:
+    draft = Proposal({"Front": "draft"}, "raw")
+
+    def fail(_score: float) -> Proposal:
+        raise RuntimeError("fix failed")
+
+    result = run_gate(draft, {}, lambda _text: 1.0, fail, True, True, 2.5)
+
+    assert result.changed == draft.changed
+    assert result.status == "⚠ unchecked: fix failed"

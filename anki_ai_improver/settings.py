@@ -4,12 +4,15 @@ from pathlib import Path
 
 from aqt import mw
 from aqt.qt import (
+    QCheckBox,
     QComboBox,
     QDialog,
     QDialogButtonBox,
+    QDoubleSpinBox,
     QFormLayout,
     QHBoxLayout,
     QInputDialog,
+    QLabel,
     QLineEdit,
     QListWidget,
     QListWidgetItem,
@@ -27,11 +30,13 @@ from .config import (
     add_prompt,
     delete_prompt,
     load_api_key,
+    migrate_config,
     remove_deck_prompt,
     rename_prompt,
     save_api_key,
     set_deck_prompt,
 )
+from .gate import decisions_url
 
 
 def _user_files():
@@ -48,6 +53,9 @@ class SettingsDialog(QDialog):
         self.setWindowTitle("AI Card Improver Settings")
         self.addon_name = _addon_name()
         self.values = mw.addonManager.getConfig(self.addon_name) or {}
+        self.values, changed = migrate_config(self.values)
+        if changed:
+            mw.addonManager.writeConfig(self.addon_name, self.values)
         self.settings = Settings.from_dict(
             {
                 **self.values,
@@ -59,6 +67,16 @@ class SettingsDialog(QDialog):
         self.model = QLineEdit(str(self.values.get("model", "")), self)
         self.api_key = QLineEdit(load_api_key(_user_files()) or "", self)
         self.api_key.setEchoMode(QLineEdit.EchoMode.Password)
+        self.gate_enabled = QCheckBox(
+            "Quality gate (checks correctness, ~0.3 s, OpenRouter only)", self
+        )
+        self.gate_enabled.setChecked(self.settings.gate_enabled)
+        self.gate_min_correctness = QDoubleSpinBox(self)
+        self.gate_min_correctness.setRange(0, 4)
+        self.gate_min_correctness.setSingleStep(0.1)
+        self.gate_min_correctness.setDecimals(1)
+        self.gate_min_correctness.setValue(self.settings.gate_min_correctness)
+        self.gate_hint = QLabel("Available only when Base URL uses OpenRouter.", self)
 
         tabs = QTabWidget(self)
         tabs.addTab(self._general_tab(), "General")
@@ -80,7 +98,19 @@ class SettingsDialog(QDialog):
         form.addRow("Base URL", self.base_url)
         form.addRow("Model", self.model)
         form.addRow("API key", self.api_key)
+        form.addRow(self.gate_enabled)
+        form.addRow("Minimum correctness", self.gate_min_correctness)
+        form.addRow(self.gate_hint)
+        self.base_url.textChanged.connect(self._update_gate_controls)
+        self.gate_enabled.toggled.connect(self._update_gate_controls)
+        self._update_gate_controls()
         return page
+
+    def _update_gate_controls(self, *_args) -> None:
+        available = decisions_url(self.base_url.text().strip()) is not None
+        self.gate_enabled.setEnabled(available)
+        self.gate_min_correctness.setEnabled(available and self.gate_enabled.isChecked())
+        self.gate_hint.setVisible(not available)
 
     def _prompts_tab(self) -> QWidget:
         page = QWidget(self)
@@ -284,6 +314,8 @@ class SettingsDialog(QDialog):
         self._store_prompt_text()
         self.values["base_url"] = self.base_url.text().strip()
         self.values["model"] = self.model.text().strip()
+        self.values["gate_enabled"] = self.gate_enabled.isChecked()
+        self.values["gate_min_correctness"] = self.gate_min_correctness.value()
         self.values["default_prompt"] = self.settings.default_prompt
         self.values["prompts"] = self.settings.prompts
         mappings = self.settings

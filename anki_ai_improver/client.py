@@ -1,6 +1,7 @@
 """OpenAI-compatible chat completion client and response parsing."""
 
 import json
+import re
 from dataclasses import dataclass
 from typing import Any
 
@@ -16,29 +17,63 @@ class Proposal:
 
     changed: dict[str, str]
     raw: str
+    status: str = ""
+
+
+def normalise_field(value: str) -> str:
+    """Remove a wrapping Markdown fence and normalize HTML line breaks."""
+    stripped = value.strip()
+    fenced = re.fullmatch(r"```[^\r\n]*\r?\n(.*?)\r?\n?```", stripped, re.DOTALL)
+    if fenced:
+        stripped = fenced.group(1)
+
+    parts = re.split(r"(<pre\b[^>]*>.*?</pre\s*>)", stripped, flags=re.IGNORECASE | re.DOTALL)
+    return "".join(
+        part if index % 2 else re.sub(r"\r\n|\n", "<br>", part) for index, part in enumerate(parts)
+    ).strip()
 
 
 def complete(
     settings: Settings,
     api_key: str,
     messages: list[dict[str, str]],
+    field_names: list[str],
     session: Any = requests,
 ) -> dict[str, Any]:
-    """Send one chat completion request, retrying without JSON mode if unsupported."""
+    """Send a chat completion request with progressively looser JSON formatting."""
     url = f"{settings.base_url.rstrip('/')}/chat/completions"
     headers = {"Authorization": f"Bearer {api_key}"}
     payload: dict[str, Any] = {
         "model": settings.model,
         "messages": messages,
-        "response_format": {"type": "json_object"},
+        "response_format": {
+            "type": "json_schema",
+            "json_schema": {
+                "name": "anki_card",
+                "strict": True,
+                "schema": {
+                    "type": "object",
+                    "additionalProperties": False,
+                    "required": ["fields"],
+                    "properties": {
+                        "fields": {
+                            "type": "object",
+                            "additionalProperties": False,
+                            "required": field_names,
+                            "properties": {name: {"type": "string"} for name in field_names},
+                        }
+                    },
+                },
+            },
+        },
     }
 
-    for attempt in range(2):
+    for attempt in range(3):
         try:
             response = session.post(
                 url,
                 headers=headers,
-                json=payload,
+                json=dict(payload),
                 timeout=settings.timeout_s,
             )
         except requests.Timeout as error:
@@ -50,8 +85,11 @@ def complete(
 
         status = response.status_code
         body = response.text
-        if status == 400 and "response_format" in body.lower() and attempt == 0:
-            payload = {key: value for key, value in payload.items() if key != "response_format"}
+        if status == 400 and "response_format" in body.lower() and attempt < 2:
+            if attempt == 0:
+                payload["response_format"] = {"type": "json_object"}
+            else:
+                payload.pop("response_format", None)
             continue
         if status in (401, 403):
             raise AiError("auth", "The AI service rejected the API key")
@@ -102,11 +140,13 @@ def parse_proposal(response: dict[str, Any], current_fields: dict[str, str]) -> 
         if not isinstance(value, str):
             raise _bad_response(raw, f"Field {name!r} was not text")
 
-    changed = {
-        name: value
-        for name, value in fields.items()
-        if name in current_fields and value != current_fields[name]
-    }
+    changed = {}
+    for name, value in fields.items():
+        if name not in current_fields:
+            continue
+        normalized_value = normalise_field(value)
+        if normalized_value != normalise_field(current_fields[name]):
+            changed[name] = normalized_value
     return Proposal(changed=changed, raw=raw)
 
 
