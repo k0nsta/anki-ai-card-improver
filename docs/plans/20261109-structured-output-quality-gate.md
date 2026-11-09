@@ -84,8 +84,8 @@ click → snapshot + deck prompt
 - Modify: `anki_ai_improver/client.py`
 - Modify: `anki_ai_improver/client_test.py`
 
-- [ ] `normalise_field(value)`: strip a wrapping ``` fence, `\r\n`/`\n` → `<br>` except inside `<pre>…</pre>`, trim; applied in `parse_proposal` to the proposal, and to both sides of the unchanged-field comparison (the original field itself is never rewritten)
-- [ ] tests: literal newlines, fenced value, already-`<br>` value unchanged, media references untouched, unchanged-after-normalise field dropped, original value containing `\n` (and a `<pre>` block) not reported as changed
+- [x] `normalise_field(value)`: strip a wrapping ``` fence, `\r\n`/`\n` → `<br>` except inside `<pre>…</pre>`, trim; applied in `parse_proposal` to the proposal, and to both sides of the unchanged-field comparison (the original field itself is never rewritten)
+- [x] tests: literal newlines, fenced value, already-`<br>` value unchanged, media references untouched, unchanged-after-normalise field dropped, original value containing `\n` (and a `<pre>` block) not reported as changed
 
 ### Task 3: Add-on output rules in the prompt
 

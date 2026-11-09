@@ -1,6 +1,7 @@
 """OpenAI-compatible chat completion client and response parsing."""
 
 import json
+import re
 from dataclasses import dataclass
 from typing import Any
 
@@ -16,6 +17,19 @@ class Proposal:
 
     changed: dict[str, str]
     raw: str
+
+
+def normalise_field(value: str) -> str:
+    """Remove a wrapping Markdown fence and normalize HTML line breaks."""
+    stripped = value.strip()
+    fenced = re.fullmatch(r"```[^\r\n]*\r?\n(.*?)\r?\n?```", stripped, re.DOTALL)
+    if fenced:
+        stripped = fenced.group(1)
+
+    parts = re.split(r"(<pre\b[^>]*>.*?</pre\s*>)", stripped, flags=re.IGNORECASE | re.DOTALL)
+    return "".join(
+        part if index % 2 else re.sub(r"\r\n|\n", "<br>", part) for index, part in enumerate(parts)
+    ).strip()
 
 
 def complete(
@@ -125,11 +139,13 @@ def parse_proposal(response: dict[str, Any], current_fields: dict[str, str]) -> 
         if not isinstance(value, str):
             raise _bad_response(raw, f"Field {name!r} was not text")
 
-    changed = {
-        name: value
-        for name, value in fields.items()
-        if name in current_fields and value != current_fields[name]
-    }
+    changed = {}
+    for name, value in fields.items():
+        if name not in current_fields:
+            continue
+        normalized_value = normalise_field(value)
+        if normalized_value != normalise_field(current_fields[name]):
+            changed[name] = normalized_value
     return Proposal(changed=changed, raw=raw)
 
 

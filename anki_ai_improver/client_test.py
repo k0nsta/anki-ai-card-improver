@@ -4,7 +4,7 @@ from typing import Any
 import pytest
 import requests
 
-from anki_ai_improver.client import Proposal, complete, parse_proposal
+from anki_ai_improver.client import Proposal, complete, normalise_field, parse_proposal
 from anki_ai_improver.config import Settings
 from anki_ai_improver.errors import AiError
 
@@ -173,3 +173,35 @@ def test_parse_proposal_drops_unknown_missing_and_unchanged_fields() -> None:
 
     assert result.changed == {"Front": "Updated"}
     assert result.raw == content
+
+
+@pytest.mark.parametrize(
+    ("value", "expected"),
+    [
+        ("first\nsecond", "first<br>second"),
+        ("```html\n<p>first\nsecond</p>\n```", "<p>first<br>second</p>"),
+        ("first<br>second", "first<br>second"),
+        ('<img src="media:card.png">', '<img src="media:card.png">'),
+        ("before\n<pre>keep\nthis</pre>\nafter", "before<br><pre>keep\nthis</pre><br>after"),
+    ],
+)
+def test_normalise_field(value: str, expected: str) -> None:
+    assert normalise_field(value) == expected
+
+
+def test_parse_proposal_normalizes_values_and_drops_normalized_unchanged_fields() -> None:
+    content = '{"fields":{"Front":"same\\nvalue","Back":"new\\nline"}}'
+
+    result = parse_proposal(_response(content), {"Front": "same<br>value", "Back": "old"})
+
+    assert result.changed == {"Back": "new<br>line"}
+
+
+def test_parse_proposal_compares_original_with_newlines_and_preserves_pre_content() -> None:
+    original = "<p>same\nline</p>\n<pre>keep\nline</pre>"
+    content = '{"fields":{"Front":"<p>same\\nline</p>\\n<pre>keep\\nline</pre>"}}'
+
+    result = parse_proposal(_response(content), {"Front": original})
+
+    assert result.changed == {}
+    assert original == "<p>same\nline</p>\n<pre>keep\nline</pre>"
