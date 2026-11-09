@@ -96,10 +96,10 @@ Staleness guard (pure `is_stale(snapshot, current_note_id: int | None, current_m
 - Create: `anki_ai_improver/config.py`, `anki_ai_improver/config_test.py`
 - Modify: `anki_ai_improver/import_test.py` (add the config module)
 
-- [ ] `Settings` dataclass + `from_dict(dict)`; missing `base_url`/`model` → `AiError("no_config")`
-- [ ] `load_api_key(user_files: Path)` reads `secret.json`; `save_api_key(...)` creates `user_files/` if missing and writes with mode 600
-- [ ] tests: defaults, missing fields, file round-trip + mode 600, absent or corrupt file → None, save into a missing `user_files/`
-- [ ] run tests — must pass before Task 3
+- [x] `Settings` dataclass + `from_dict(dict)`; missing `base_url`/`model` → `AiError("no_config")`
+- [x] `load_api_key(user_files: Path)` reads `secret.json`; `save_api_key(...)` creates `user_files/` if missing and writes with mode 600
+- [x] tests: defaults, missing fields, file round-trip + mode 600, absent or corrupt file → None, save into a missing `user_files/`
+- [x] run tests — must pass before Task 3
 
 ### Task 3: Prompt resolution and message build (`prompts.py`)
 
