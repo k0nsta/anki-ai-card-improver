@@ -80,14 +80,13 @@ Staleness guard (pure `is_stale(snapshot, current_note_id: int | None, current_m
 
 **Files:**
 - Create: `anki_ai_improver/__init__.py`, `anki_ai_improver/errors.py`, `anki_ai_improver/config.json`, `anki_ai_improver/manifest.json`, `anki_ai_improver/import_test.py`
-- Modify: `pyproject.toml`, `Makefile`, `.gitignore` (bootstrapped before the run)
+- Modify: `pyproject.toml`, `uv.lock`, `.gitignore` (bootstrapped before the run; `Makefile` is final, do not change it)
 - Create: `README.md`
 
 - [ ] `__init__.py`: `try: from aqt import mw` / `except ImportError: mw = None`; `if mw: from . import addon` (addon.py added in Task 5)
 - [ ] `manifest.json` (`package`, `name`, `min_point_version`: 260900 — Anki 26.09+, both editors present there) and default `config.json` from Technical Details
 - [ ] `errors.py`: `AiError(kind, message)` with the kinds from Technical Details
-- [ ] `pyproject.toml`: add `requests` and `types-requests` to dev deps (Anki provides `requests` at runtime); mypy excludes Qt modules
-- [ ] `Makefile`: keep `test` and `lint` as bootstrapped; add `link ADDONS=<addons21 dir>` (symlink), `package` (zip to `dist/anki_ai_improver.ankiaddon`, excluding `*_test.py`, `__pycache__`, `user_files/`)
+- [ ] `pyproject.toml`: add `requests` and `types-requests` to dev deps (Anki provides `requests` at runtime), `uv lock`; mypy overrides for `aqt`/`anki` and the Qt modules are already bootstrapped
 - [ ] `.gitignore`: add `user_files/`, `*.ankiaddon`, `dist/`
 - [ ] `import_test.py`: `anki_ai_improver` and `anki_ai_improver.errors` import without `aqt` loaded; Tasks 2–5 each add their new pure module to it
 
@@ -95,7 +94,7 @@ Staleness guard (pure `is_stale(snapshot, current_note_id: int | None, current_m
 
 **Files:**
 - Create: `anki_ai_improver/config.py`, `anki_ai_improver/config_test.py`
-- Modify: `anki_ai_improver/import_test.py` (add `config`)
+- Modify: `anki_ai_improver/import_test.py` (add the config module)
 
 - [ ] `Settings` dataclass + `from_dict(dict)`; missing `base_url`/`model` → `AiError("no_config")`
 - [ ] `load_api_key(user_files: Path)` reads `secret.json`; `save_api_key(...)` creates `user_files/` if missing and writes with mode 600
@@ -106,7 +105,7 @@ Staleness guard (pure `is_stale(snapshot, current_note_id: int | None, current_m
 
 **Files:**
 - Create: `anki_ai_improver/prompts.py`, `anki_ai_improver/prompts_test.py`
-- Modify: `anki_ai_improver/import_test.py` (add `prompts`)
+- Modify: `anki_ai_improver/import_test.py` (add the prompts module)
 
 - [ ] `candidate_deck_ids(current_did, parent_ids_root_first)` → `[current, nearest parent, …, root]`
 - [ ] `resolve_prompt(candidate_deck_ids: list[int], settings) -> (name, text)`
@@ -120,7 +119,7 @@ Staleness guard (pure `is_stale(snapshot, current_note_id: int | None, current_m
 
 **Files:**
 - Create: `anki_ai_improver/client.py`, `anki_ai_improver/client_test.py`
-- Modify: `anki_ai_improver/import_test.py` (add `client`)
+- Modify: `anki_ai_improver/import_test.py` (add the client module)
 
 - [ ] `complete(settings, api_key, messages, session=requests) -> dict` (response JSON); maps HTTP/timeout/network to `AiError`
 - [ ] `parse_proposal(response, current_fields) -> Proposal` per Technical Details
@@ -133,7 +132,7 @@ Staleness guard (pure `is_stale(snapshot, current_note_id: int | None, current_m
 
 **Files:**
 - Create: `anki_ai_improver/logic.py`, `anki_ai_improver/logic_test.py`
-- Modify: `anki_ai_improver/import_test.py` (add `logic`)
+- Modify: `anki_ai_improver/import_test.py` (add the logic module)
 - Create: `anki_ai_improver/addon.py`, `anki_ai_improver/dialog.py`, `anki_ai_improver/settings.py`
 
 - [ ] `logic.py` (pure): `merge_accepted(fields, proposal, accepted_names)`, `is_stale` per Technical Details
