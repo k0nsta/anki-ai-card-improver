@@ -37,22 +37,57 @@ class NoteSnapshot:
     fields: dict[str, str]
 
 
+def _output_rules(field_names: list[str]) -> str:
+    """Return generic output instructions constrained to this note's fields."""
+    names = json.dumps(field_names, ensure_ascii=False)
+    return (
+        "Output rules:\n"
+        f'- Return {{"fields": {{...}}}} with exactly these note field names: {names}; '
+        "each value is that field's full new content.\n"
+        "- Field content is Anki HTML: use <br> for line breaks and <br><br> between blocks; "
+        "do not use Markdown, code fences, or literal newlines.\n"
+        "- Keep media references ([sound:...], <img ...>) unchanged.\n"
+        "- The note's current content is the topic; improve it according to the instructions above."
+    )
+
+
+def _original_note(snapshot: NoteSnapshot) -> dict[str, object]:
+    return {
+        "note_type": snapshot.note_type,
+        "deck": snapshot.deck_name,
+        "tags": snapshot.tags,
+        "fields": snapshot.fields,
+    }
+
+
 def build_messages(prompt_text: str, snapshot: NoteSnapshot) -> list[dict[str, str]]:
     """Build the OpenAI-compatible system and user messages for one note."""
-    contract = (
-        'Return ONLY a JSON object {"fields": {<field name>: <html>}} using exactly '
-        "the field names given. Keep HTML formatting and media references unchanged unless asked."
+    user_content = json.dumps(_original_note(snapshot), ensure_ascii=False)
+    return [
+        {"role": "system", "content": f"{prompt_text}\n\n{_output_rules(list(snapshot.fields))}"},
+        {"role": "user", "content": user_content},
+    ]
+
+
+def build_fix_messages(
+    prompt_text: str,
+    snapshot: NoteSnapshot,
+    draft_fields: dict[str, str],
+    score: float,
+) -> list[dict[str, str]]:
+    """Build messages asking the model to repair a quality-gated draft."""
+    fix_instructions = (
+        f"An automatic quality check rated this card's correctness {score:.1f}/4. "
+        "Find and fix factual, language and translation errors; keep everything that is correct."
     )
     user_content = json.dumps(
-        {
-            "note_type": snapshot.note_type,
-            "deck": snapshot.deck_name,
-            "tags": snapshot.tags,
-            "fields": snapshot.fields,
-        },
+        {"original_note": _original_note(snapshot), "draft": draft_fields},
         ensure_ascii=False,
     )
     return [
-        {"role": "system", "content": f"{prompt_text}\n\n{contract}"},
+        {
+            "role": "system",
+            "content": f"{prompt_text}\n\n{fix_instructions}\n\n{_output_rules(list(snapshot.fields))}",
+        },
         {"role": "user", "content": user_content},
     ]
