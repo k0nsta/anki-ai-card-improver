@@ -184,8 +184,8 @@ Staleness guard (pure `is_stale(snapshot, current_note_id: int | None, current_m
 - Modify: `README.md`
 - Create: `CLAUDE.md`
 
-- [ ] README: install (symlink/`.ankiaddon`), configuration, example English/Portuguese prompts, privacy note (card content is sent to the configured provider)
-- [ ] add CLAUDE.md for the repo (layout, `make` targets, pure-core rule)
+- [x] README: install (symlink/`.ankiaddon`), configuration, example English/Portuguese prompts, privacy note (card content is sent to the configured provider)
+- [x] add CLAUDE.md for the repo (layout, `make` targets, pure-core rule)
 
 ## Acceptance Criteria
 - Run: `make package && ! python3 -m zipfile -l dist/anki_ai_improver.ankiaddon | grep -E '_test\.py|__pycache__|user_files'`
