@@ -106,13 +106,13 @@ click → snapshot + deck prompt
 - Modify: `anki_ai_improver/config_test.py`
 - Modify: `anki_ai_improver/import_test.py`
 
-- [ ] `decisions_url(base_url) -> str | None` (None when not openrouter.ai)
-- [ ] `score_correctness(settings, api_key, snapshot_fields_text, note_type, deck, session=requests) -> float` posting the question from Technical Details; maps HTTP/timeout/network/bad JSON to `AiError`
-- [ ] `needs_fix(score, minimum) -> bool`
-- [ ] `Settings`: `gate_enabled`, `gate_model`, `gate_min_correctness` with defaults; a non-number or out-of-range minimum falls back to 2.5
-- [ ] `card_text(fields) -> dict[str, str]`: strip HTML for the gate input (`<br>` → newline)
-- [ ] tests: URL derivation (openrouter, trailing slash, other host → None), request body shape, score parsing, error mapping, `needs_fix` boundaries, `card_text`, settings defaults and the 2.5 fallback (string, -1, 5)
-- [ ] run tests — must pass before Task 5
+- [x] `decisions_url(base_url) -> str | None` (None when not openrouter.ai)
+- [x] `score_correctness(settings, api_key, snapshot_fields_text, note_type, deck, session=requests) -> float` posting the question from Technical Details; maps HTTP/timeout/network/bad JSON to `AiError`
+- [x] `needs_fix(score, minimum) -> bool`
+- [x] `Settings`: `gate_enabled`, `gate_model`, `gate_min_correctness` with defaults; a non-number or out-of-range minimum falls back to 2.5
+- [x] `card_text(fields) -> dict[str, str]`: strip HTML for the gate input (`<br>` → newline)
+- [x] tests: URL derivation (openrouter, trailing slash, other host → None), request body shape, score parsing, error mapping, `needs_fix` boundaries, `card_text`, settings defaults and the 2.5 fallback (string, -1, 5)
+- [x] run tests — must pass before Task 5
 
 ### Task 5: Wire the gate into the improve flow and dialog
 

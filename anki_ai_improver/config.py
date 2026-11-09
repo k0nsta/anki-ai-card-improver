@@ -1,6 +1,7 @@
 """Configuration parsing and API key storage for the add-on."""
 
 import json
+import math
 import os
 from dataclasses import dataclass, field, replace
 from pathlib import Path
@@ -14,6 +15,8 @@ _DEFAULT_PROMPTS = {
         "Keep the language of each field."
     )
 }
+_DEFAULT_GATE_MODEL = "typesafe/jev-1.14"
+_DEFAULT_GATE_MIN_CORRECTNESS = 2.5
 
 
 @dataclass
@@ -25,6 +28,9 @@ class Settings:
     default_prompt: str = "default"
     prompts: dict[str, str] = field(default_factory=lambda: _DEFAULT_PROMPTS.copy())
     decks: dict[str, str] = field(default_factory=dict)
+    gate_enabled: bool = False
+    gate_model: str = _DEFAULT_GATE_MODEL
+    gate_min_correctness: float = _DEFAULT_GATE_MIN_CORRECTNESS
 
     @classmethod
     def from_dict(cls, values: dict[str, Any]) -> "Settings":
@@ -36,6 +42,15 @@ class Settings:
         if not isinstance(model, str) or not model:
             raise AiError("no_config", "Missing model in add-on config")
 
+        gate_min_correctness = values.get("gate_min_correctness", _DEFAULT_GATE_MIN_CORRECTNESS)
+        if (
+            isinstance(gate_min_correctness, bool)
+            or not isinstance(gate_min_correctness, (int, float))
+            or not math.isfinite(float(gate_min_correctness))
+            or not 0 <= gate_min_correctness <= 4
+        ):
+            gate_min_correctness = _DEFAULT_GATE_MIN_CORRECTNESS
+
         return cls(
             base_url=base_url,
             model=model,
@@ -44,6 +59,9 @@ class Settings:
             default_prompt=values.get("default_prompt", "default"),
             prompts=values.get("prompts", _DEFAULT_PROMPTS.copy()),
             decks=values.get("decks", {}),
+            gate_enabled=values.get("gate_enabled", False),
+            gate_model=values.get("gate_model", _DEFAULT_GATE_MODEL),
+            gate_min_correctness=float(gate_min_correctness),
         )
 
 

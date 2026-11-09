@@ -25,6 +25,22 @@ def test_settings_defaults() -> None:
     assert settings.default_prompt == "default"
     assert settings.prompts["default"]
     assert settings.decks == {}
+    assert settings.gate_enabled is False
+    assert settings.gate_model == "typesafe/jev-1.14"
+    assert settings.gate_min_correctness == 2.5
+
+
+@pytest.mark.parametrize("minimum", ["3", -1, 5])
+def test_settings_invalid_gate_minimum_falls_back(minimum: object) -> None:
+    settings = Settings.from_dict(
+        {
+            "base_url": "https://example.test/v1",
+            "model": "model",
+            "gate_min_correctness": minimum,
+        }
+    )
+
+    assert settings.gate_min_correctness == 2.5
 
 
 @pytest.mark.parametrize("missing", ["base_url", "model"])
