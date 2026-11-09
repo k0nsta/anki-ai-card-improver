@@ -15,8 +15,15 @@ from .client import Proposal, complete, parse_proposal
 from .config import Settings, load_api_key
 from .dialog import DiffDialog
 from .errors import AiError
-from .logic import editor_mode, review_shortcut
-from .prompts import NoteSnapshot, build_messages, candidate_deck_ids, resolve_prompt
+from .gate import card_text, decisions_url, score_correctness
+from .logic import editor_mode, review_shortcut, run_gate
+from .prompts import (
+    NoteSnapshot,
+    build_fix_messages,
+    build_messages,
+    candidate_deck_ids,
+    resolve_prompt,
+)
 from .settings import register_settings, show_settings
 
 
@@ -134,7 +141,34 @@ def _run_request(
 
     def op(_collection: Any) -> Proposal:
         response = complete(settings, api_key, messages, list(snapshot.fields))
-        return parse_proposal(response, snapshot.fields)
+        draft = parse_proposal(response, snapshot.fields)
+        merged_fields = dict(snapshot.fields)
+        merged_fields.update(draft.changed)
+        available = decisions_url(settings.base_url) is not None
+
+        def score_fn(merged_text: dict[str, str]) -> float:
+            return score_correctness(
+                settings,
+                api_key,
+                merged_text,
+                snapshot.note_type,
+                snapshot.deck_name,
+            )
+
+        def fix_fn(score: float) -> Proposal:
+            fix_messages = build_fix_messages(prompt_text, snapshot, merged_fields, score)
+            fix_response = complete(settings, api_key, fix_messages, list(snapshot.fields))
+            return parse_proposal(fix_response, snapshot.fields)
+
+        return run_gate(
+            draft,
+            card_text(merged_fields),
+            score_fn,
+            fix_fn,
+            settings.gate_enabled,
+            available,
+            settings.gate_min_correctness,
+        )
 
     (
         QueryOp(parent=parent, op=op, success=on_success)

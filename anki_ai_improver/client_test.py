@@ -132,6 +132,10 @@ def _response(content: Any, finish_reason: str = "stop") -> dict[str, Any]:
     return {"choices": [{"message": {"content": content}, "finish_reason": finish_reason}]}
 
 
+def test_proposal_status_defaults_to_empty() -> None:
+    assert Proposal({}, "raw").status == ""
+
+
 @pytest.mark.parametrize(
     "content",
     [

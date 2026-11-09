@@ -1,8 +1,10 @@
 """Pure helpers shared by the add-on's UI flows."""
 
-from collections.abc import Iterable, Mapping
+from collections.abc import Callable, Iterable, Mapping
+from dataclasses import replace
 
 from .client import Proposal
+from .gate import needs_fix
 from .prompts import NoteSnapshot
 
 
@@ -50,3 +52,55 @@ def is_stale(
         or current_mtime != snapshot.mtime
         or current_target_id != snapshot.card_id
     )
+
+
+def gate_status(
+    enabled: bool,
+    available: bool,
+    score: float | None,
+    fixed: bool,
+    error: Exception | str | None,
+) -> str:
+    """Return the concise quality-gate status shown alongside a proposal."""
+    if not enabled:
+        return ""
+    if not available:
+        return "⚠ unchecked: quality gate needs OpenRouter"
+    if error is not None:
+        reason = getattr(error, "message", str(error))
+        return f"⚠ unchecked: {reason}"
+    if fixed:
+        return "✓ fixed after check"
+    if score is not None:
+        return "✓ checked"
+    return ""
+
+
+def run_gate(
+    draft: Proposal,
+    merged_text: dict[str, str],
+    score_fn: Callable[[dict[str, str]], float],
+    fix_fn: Callable[[float], Proposal],
+    enabled: bool,
+    available: bool,
+    minimum: float,
+) -> Proposal:
+    """Score a draft and optionally repair it, preserving drafts on gate errors."""
+    if not enabled:
+        return draft
+    if not available:
+        return replace(draft, status=gate_status(True, False, None, False, None))
+
+    try:
+        score = score_fn(merged_text)
+    except Exception as error:  # noqa: BLE001 - gate failures must preserve the draft
+        return replace(draft, status=gate_status(True, True, None, False, error))
+
+    if not needs_fix(score, minimum):
+        return replace(draft, status=gate_status(True, True, score, False, None))
+
+    try:
+        fixed_draft = fix_fn(score)
+    except Exception as error:  # noqa: BLE001 - fix failures must preserve the draft
+        return replace(draft, status=gate_status(True, True, score, False, error))
+    return replace(fixed_draft, status=gate_status(True, True, score, True, None))

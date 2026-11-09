@@ -124,16 +124,16 @@ click → snapshot + deck prompt
 - Modify: `anki_ai_improver/client.py`
 - Modify: `anki_ai_improver/client_test.py`
 
-- [ ] `Proposal` (`client.py`) gains `status: str = ""`
-- [ ] in the background op: draft → if gate enabled and available: score the merged card text → fix call when `needs_fix` → return the proposal with its status
-- [ ] pure `gate_status(enabled, available, score, fixed, error) -> str` producing the dialog status line from Solution Overview
-- [ ] gate or fix-call errors never fail the request: draft kept, status "⚠ unchecked: <reason>"; gate enabled with a non-OpenRouter `base_url` → "⚠ unchecked: quality gate needs OpenRouter"
-- [ ] `DiffDialog` shows the status line; Retry re-runs the whole flow
-- [ ] pure `run_gate(draft: Proposal, merged_text, score_fn, fix_fn, enabled, available, minimum) -> Proposal` in `logic.py` with injected callables; `addon.py` only calls it inside the QueryOp
-- [ ] tests for `gate_status` (off, needs OpenRouter, passed, fixed, gate error, fix-call error)
-- [ ] tests for `run_gate`: off → draft unchanged and score_fn not called; unavailable; pass; low score → fix_fn result with "✓ fixed after check"; score_fn raises → draft + "⚠ unchecked"; fix_fn raises → draft + "⚠ unchecked"
-- [ ] test in `client_test.py` that `Proposal.status` defaults to `""`
-- [ ] run tests — must pass before Task 6
+- [x] `Proposal` (`client.py`) gains `status: str = ""`
+- [x] in the background op: draft → if gate enabled and available: score the merged card text → fix call when `needs_fix` → return the proposal with its status
+- [x] pure `gate_status(enabled, available, score, fixed, error) -> str` producing the dialog status line from Solution Overview
+- [x] gate or fix-call errors never fail the request: draft kept, status "⚠ unchecked: <reason>"; gate enabled with a non-OpenRouter `base_url` → "⚠ unchecked: quality gate needs OpenRouter"
+- [x] `DiffDialog` shows the status line; Retry re-runs the whole flow
+- [x] pure `run_gate(draft: Proposal, merged_text, score_fn, fix_fn, enabled, available, minimum) -> Proposal` in `logic.py` with injected callables; `addon.py` only calls it inside the QueryOp
+- [x] tests for `gate_status` (off, needs OpenRouter, passed, fixed, gate error, fix-call error)
+- [x] tests for `run_gate`: off → draft unchanged and score_fn not called; unavailable; pass; low score → fix_fn result with "✓ fixed after check"; score_fn raises → draft + "⚠ unchecked"; fix_fn raises → draft + "⚠ unchecked"
+- [x] test in `client_test.py` that `Proposal.status` defaults to `""`
+- [x] run tests — must pass before Task 6
 
 ### Task 6: Settings: gate controls
 

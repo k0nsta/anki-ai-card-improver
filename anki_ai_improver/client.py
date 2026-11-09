@@ -17,6 +17,7 @@ class Proposal:
 
     changed: dict[str, str]
     raw: str
+    status: str = ""
 
 
 def normalise_field(value: str) -> str:

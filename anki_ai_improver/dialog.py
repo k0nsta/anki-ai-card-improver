@@ -49,6 +49,7 @@ class DiffDialog(QDialog):
             self.prompt.setCurrentIndex(selected)
         self.retry_button = QPushButton("Retry", self)
         self.retry_button.clicked.connect(self._retry)
+        self.status_label = QLabel(proposal.status, self)
         prompt_row = QHBoxLayout()
         prompt_row.addWidget(QLabel("Prompt", self))
         prompt_row.addWidget(self.prompt, 1)
@@ -68,6 +69,7 @@ class DiffDialog(QDialog):
         buttons.rejected.connect(self.reject)
         layout = QVBoxLayout(self)
         layout.addLayout(prompt_row)
+        layout.addWidget(self.status_label)
         layout.addLayout(self.fields_layout)
         layout.addWidget(self.raw_view)
         layout.addWidget(buttons)
@@ -100,6 +102,7 @@ class DiffDialog(QDialog):
 
         def receive(proposal: Proposal) -> None:
             self.proposal = proposal
+            self.status_label.setText(proposal.status)
             self.raw_view.setPlainText(proposal.raw)
             self.raw_view.hide()
             self._populate_fields()
