@@ -133,7 +133,7 @@ def _run_request(
     messages = build_messages(prompt_text, snapshot)
 
     def op(_collection: Any) -> Proposal:
-        response = complete(settings, api_key, messages)
+        response = complete(settings, api_key, messages, list(snapshot.fields))
         return parse_proposal(response, snapshot.fields)
 
     (

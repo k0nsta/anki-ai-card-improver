@@ -72,11 +72,11 @@ click → snapshot + deck prompt
 - Modify: `anki_ai_improver/client_test.py`
 - Modify: `anki_ai_improver/addon.py`
 
-- [ ] `complete(settings, api_key, messages, field_names, session=requests)`: send the json_schema from Technical Details built from `field_names`
-- [ ] on HTTP 400 mentioning `response_format`: retry with `json_object`, then without `response_format`; each step once
-- [ ] update the caller `addon.py` (`_run_request`) to pass `list(snapshot.fields)`
-- [ ] tests: schema payload shape and field names, 400 → json_object → none chain, non-response_format 400 does not retry, existing error mapping unchanged
-- [ ] run tests — must pass before Task 2
+- [x] `complete(settings, api_key, messages, field_names, session=requests)`: send the json_schema from Technical Details built from `field_names`
+- [x] on HTTP 400 mentioning `response_format`: retry with `json_object`, then without `response_format`; each step once
+- [x] update the caller `addon.py` (`_run_request`) to pass `list(snapshot.fields)`
+- [x] tests: schema payload shape and field names, 400 → json_object → none chain, non-response_format 400 does not retry, existing error mapping unchanged
+- [x] run tests — must pass before Task 2
 
 ### Task 2: Normalise model output
 
