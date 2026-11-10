@@ -81,21 +81,28 @@ class DiffDialog(QDialog):
             if widget is not None:
                 widget.deleteLater()
         self.checkboxes.clear()
-        for name, new_value in self.proposal.changed.items():
+        if not self.proposal.changed:
+            self.fields_layout.addWidget(QLabel("No changes suggested.", self))
+        for name, old_value in self.snapshot.fields.items():
+            if name not in self.proposal.changed:
+                self.fields_layout.addWidget(QLabel(f"{name} (unchanged)", self))
+                self.fields_layout.addWidget(self._html_view(old_value))
+                continue
             checkbox = QCheckBox(name, self)
             checkbox.setChecked(True)
             self.checkboxes[name] = checkbox
-            old_view = QTextBrowser(self)
-            old_view.setPlainText(self.snapshot.fields[name])
-            new_view = QTextBrowser(self)
-            new_view.setPlainText(new_value)
-            old_view.setMinimumHeight(70)
-            new_view.setMinimumHeight(70)
             self.fields_layout.addWidget(checkbox)
             self.fields_layout.addWidget(QLabel("Current", self))
-            self.fields_layout.addWidget(old_view)
+            self.fields_layout.addWidget(self._html_view(old_value))
             self.fields_layout.addWidget(QLabel("Suggested", self))
-            self.fields_layout.addWidget(new_view)
+            self.fields_layout.addWidget(self._html_view(self.proposal.changed[name]))
+
+    def _html_view(self, html: str) -> QTextBrowser:
+        view = QTextBrowser(self)
+        view.setOpenLinks(False)
+        view.setHtml(html)
+        view.setMinimumHeight(70)
+        return view
 
     def _retry(self) -> None:
         self.retry_button.setEnabled(False)
