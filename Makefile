@@ -11,7 +11,7 @@ lint:
 	uv run ruff format --check .
 	if [ -d $(PKG) ]; then uv run mypy $(PKG); fi
 
-# make link ADDONS=<profile>/addons21
+# make link ADDONS=<Anki2>/addons21
 link:
 	@test -n "$(ADDONS)" || { echo "usage: make link ADDONS=<addons21 dir>"; exit 1; }
 	ln -sfn "$(CURDIR)/$(PKG)" "$(ADDONS)/$(PKG)"

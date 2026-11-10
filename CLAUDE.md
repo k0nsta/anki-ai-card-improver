@@ -11,7 +11,7 @@
 
 - `make test` runs pytest.
 - `make lint` runs Ruff checks and formatting verification, then mypy on the add-on package.
-- `make link ADDONS=<profile>/addons21` links the package into an Anki profile for local development.
+- `make link ADDONS=<Anki2>/addons21` links the package into Anki's add-ons folder for local development.
 - `make package` builds `dist/anki_ai_improver.ankiaddon`, excluding tests and local user files.
 
 ## Pure-core rule

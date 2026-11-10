@@ -4,7 +4,7 @@ An Anki desktop add-on that proposes clearer card fields through an OpenAI-compa
 
 ## Install
 
-- For development, link the add-on folder into an Anki profile: `make link ADDONS="/path/to/Anki2/<profile>/addons21"`.
+- For development, link the add-on folder into Anki's add-ons folder: `make link ADDONS="<Anki2>/addons21"`. `addons21` sits directly in the Anki data folder, not in a profile: `~/Library/Application Support/Anki2/addons21` (macOS), `%APPDATA%\Anki2\addons21` (Windows), `~/.local/share/Anki2/addons21` (Linux).
 - To install a package, run `make package`, then in Anki choose **Tools → Add-ons → Install from file** and select `dist/anki_ai_improver.ankiaddon`.
 
 Restart Anki after installing. Open **Tools → AI Card Improver Settings…** to configure the provider.
@@ -29,3 +29,7 @@ The optional quality gate asks an OpenRouter decisions model to check correctnes
 ## Privacy
 
 When you request an improvement, the note's field contents, note type, deck name, and tags are sent to the AI provider configured in settings. The provider processes that data under its own terms and privacy policy. Do not submit cards containing information you do not want that provider to receive.
+
+## License
+
+Copyright (C) 2026 Konstantin Naumov. Licensed under the GNU Affero General Public License v3.0 or later, the same license as Anki. See [LICENSE](LICENSE).
