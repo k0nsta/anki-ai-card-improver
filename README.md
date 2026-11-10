@@ -15,7 +15,7 @@ In **General**, set the provider's base URL (the API root, such as `https://open
 
 ## Prompts
 
-The default prompt works for any deck. Per-deck prompts should control the card's content only; the add-on supplies deck-agnostic output and formatting rules. See the [generic](docs/prompts/generic.md), [English](docs/prompts/english.md), and [European Portuguese](docs/prompts/portuguese.md) examples. Add or edit prompts in **Prompts**, then use the **Decks** tab to map a deck to a prompt; the closest deck or parent-deck mapping wins, and unmapped decks use the default.
+The default prompt works for any deck. Per-deck prompts should control the card's content only; the add-on supplies deck-agnostic output and formatting rules. The [generic prompt](docs/prompts/generic.md) is the built-in default and a starting point for your own: copy it into a new prompt and add what your deck needs (e.g. target language, translation language, card layout). Add or edit prompts in **Prompts**, then use the **Decks** tab to map a deck to a prompt; the closest deck or parent-deck mapping wins, and unmapped decks use the default.
 
 ## Quality gate
 
